@@ -1,0 +1,103 @@
+<div wire:poll.1s="pollProgress" class="tipowerup-installer__progress-modal">
+    {{-- Header --}}
+    <div class="mb-4">
+        <h5 class="mb-1">
+            @if($isCompleted)
+                <i class="fa fa-check-circle text-success me-2"></i>
+                {{ lang('tipowerup.installer::default.progress_stage_completed') }}
+            @elseif($hasFailed)
+                <i class="fa fa-times-circle text-danger me-2"></i>
+                {{ lang('tipowerup.installer::default.progress_stage_failed') }}
+            @else
+                <i class="fa fa-spinner fa-spin text-primary me-2"></i>
+                {{ lang('tipowerup.installer::default.progress_title', ['package' => $packageName]) }}
+            @endif
+        </h5>
+    </div>
+
+    {{-- Progress Bar --}}
+    @if(!$isCompleted && !$hasFailed)
+        <div class="tipowerup-installer__progress-bar mb-4">
+            <div class="tipowerup-installer__progress-fill" style="width: {{ $progressPercent }}%"></div>
+        </div>
+        <p class="text-center text-muted small mb-4">{{ $progressPercent }}% {{ lang('tipowerup.installer::default.progress_stage_completed') }}</p>
+    @endif
+
+    {{-- Progress Steps --}}
+    <ul class="tipowerup-installer__progress-steps">
+        @foreach($stages as $stage)
+            <li class="tipowerup-installer__progress-step tipowerup-installer__progress-step--{{ $stage['status'] }}"
+                wire:key="stage-{{ $stage['key'] }}">
+                <div class="tipowerup-installer__progress-step-icon">
+                    @if($stage['status'] === 'completed')
+                        <i class="fa fa-check"></i>
+                    @elseif($stage['status'] === 'current')
+                        <i class="fa fa-spinner fa-spin"></i>
+                    @elseif($stage['status'] === 'error')
+                        <i class="fa fa-times"></i>
+                    @else
+                        <i class="fa fa-circle" style="font-size: 8px;"></i>
+                    @endif
+                </div>
+                <div class="flex-grow-1">
+                    <strong>{{ $stage['label'] }}</strong>
+                    @if($stage['status'] === 'completed')
+                        <span class="text-success ms-2 small">done</span>
+                    @elseif($stage['status'] === 'current')
+                        <span class="text-primary ms-2 small">in progress</span>
+                    @elseif($stage['status'] === 'error')
+                        <span class="text-danger ms-2 small">failed</span>
+                    @else
+                        <span class="text-muted ms-2 small">pending</span>
+                    @endif
+                </div>
+            </li>
+        @endforeach
+    </ul>
+
+    {{-- Status Message --}}
+    @if($statusMessage && !$isCompleted && !$hasFailed)
+        <div class="alert alert-info mt-4 mb-0" role="alert">
+            <i class="fa fa-info-circle me-2"></i>
+            {{ $statusMessage }}
+        </div>
+    @endif
+
+    {{-- Error Message --}}
+    @if($hasFailed && $errorMessage)
+        <div class="alert alert-danger mt-4" role="alert">
+            <i class="fa fa-exclamation-triangle me-2"></i>
+            <strong>{{ lang('tipowerup.installer::default.progress_stage_failed') }}</strong>
+            <p class="mb-0 mt-2 small">{{ $errorMessage }}</p>
+        </div>
+    @endif
+
+    {{-- Success Message --}}
+    @if($isCompleted)
+        <div class="alert alert-success mt-4" role="alert">
+            <i class="fa fa-check-circle me-2"></i>
+            <strong>{{ lang('tipowerup.installer::default.success_installed', ['package' => $packageName]) }}</strong>
+        </div>
+    @endif
+
+    {{-- Action Buttons --}}
+    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+        @if($isCompleted)
+            <button wire:click="closeProgress" type="button" class="btn btn-primary">
+                {{ lang('tipowerup.installer::default.progress_close') }}
+            </button>
+        @elseif($hasFailed)
+            <button wire:click="closeProgress" type="button" class="btn btn-secondary">
+                {{ lang('tipowerup.installer::default.progress_close') }}
+            </button>
+            <button wire:click="retryInstall" type="button" class="btn btn-primary">
+                <i class="fa fa-redo me-2"></i>
+                {{ lang('tipowerup.installer::default.progress_retry') }}
+            </button>
+        @else
+            <button type="button" class="btn btn-outline-secondary" disabled>
+                {{ lang('tipowerup.installer::default.progress_cancel') }}
+            </button>
+        @endif
+    </div>
+</div>
