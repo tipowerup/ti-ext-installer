@@ -31,16 +31,16 @@ The extension implements a **hybrid installer** with three methods, selecting th
 
 | Class | Responsibility |
 |-------|-----------------|
-| `Extension` | Entry point, registers Livewire components and navigation |
+| `Extension` | Entry point, registers Livewire components and navigation; also registers storage-based packages on boot |
 | `PackageInstaller` | Facade routing to Direct or Composer installer |
-| `DirectInstaller` | Download ZIP, verify checksum, extract, register |
+| `DirectInstaller` | Download ZIP, verify checksum, extract to `storage/app/tipowerup/`, register |
 | `ComposerInstaller` | Configure repo, add auth, run `composer require` |
 | `HostingDetector` | Analyze environment (exec, memory, composer available) |
 | `InstallationPipeline` | Orchestrate full flow with progress tracking |
 | `BackupManager` | Create/restore backups before/after changes |
 | `PowerUpApiClient` | HTTP client for TI PowerUp API communication |
 | `BatchInstaller` | Resolve dependencies and group packages |
-| `HealthChecker` | Pre-installation system checks |
+| `HealthChecker` | Pre-installation system checks (includes public vendor writability check) |
 | `CompatibilityChecker` | Verify package requirements |
 
 ### AdminController + Livewire Bridge
@@ -89,6 +89,8 @@ User Action
 │   Verify Checksum            Composer require
 │       ↓                             ↓
 │   Extract Files              Register with TI
+│       ↓                             ↓
+│   Publish Theme Assets       Run Migrations
 │       ↓
 │   Register with TI
 │       ↓
@@ -182,8 +184,8 @@ Livewire Components
 │ 5. EXTRACTION PHASE (50-70%)                                │
 ├─────────────────────────────────────────────────────────────┤
 │ Direct Method:                                              │
-│ • Extract ZIP to target directory                           │
-│ • Validate structure (Extension.php, extension.json)        │
+│ • Extract ZIP to storage/app/tipowerup/{type}/{name}       │
+│ • Validate structure (Extension.php or src/Extension.php)  │
 │ • Clean up ZIP file                                         │
 │                                                             │
 │ Composer Method:                                            │
@@ -195,6 +197,7 @@ Livewire Components
 │ 6. REGISTRATION PHASE (70-85%)                              │
 ├─────────────────────────────────────────────────────────────┤
 │ • Load with TI ExtensionManager / ThemeManager              │
+│ • Publish theme assets to public/vendor/{vendor}-{name}/   │
 │ • Register service provider                                 │
 │ • Create database model entry                               │
 │ • Update installed extensions list                          │
@@ -751,7 +754,7 @@ DirectInstaller::extractPackage()
     │   ├── Reject: starts with "/" or "\"
     │   ├── Reject: dangerous extensions (phar, sh, exe)
     │   └── Accept: normal paths
-    ├── Extract to isolated directory
+    ├── Extract to storage/app/tipowerup/ (safer for shared hosting)
     └── Verify structure after extraction
 ```
 

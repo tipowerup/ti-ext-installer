@@ -53,10 +53,10 @@ If your extension modified core tables (added columns, foreign keys, altered sch
 
 The TI PowerUp Installer supports two installation methods:
 
-- **Direct Extraction** (shared hosting, ~80% of users) -- Downloads ZIPs, extracts via PHP `ZipArchive`, no CLI needed
+- **Direct Extraction** (shared hosting, ~80% of users) -- Downloads ZIPs, extracts to `storage/app/tipowerup/` via PHP `ZipArchive`, no CLI needed. This is safer for shared hosting.
 - **Composer Installation** (VPS/dedicated, ~20%) -- Uses `composer require` via Symfony Process
 
-Both methods follow the same lifecycle: download -> verify checksum -> extract/install -> run migrations -> register with TI. On uninstall: rollback migrations -> remove files -> deregister. Your extension must survive this entire cycle without leaving broken state behind.
+Both methods follow the same lifecycle: download -> verify checksum -> extract/install to storage paths -> run migrations -> register with TI. On uninstall: rollback migrations -> remove files -> deregister. Your extension must survive this entire cycle without leaving broken state behind.
 
 ---
 
@@ -228,10 +228,11 @@ Understanding the lifecycle is critical for knowing where to put your code:
 
 | Phase | What Happens | Your Code |
 |-------|-------------|-----------|
-| **1. Discovery** | TI scans `vendor/` and `extensions/` for packages with `extra.tastyigniter-extension` in `composer.json` | Nothing -- automatic |
+| **1. Discovery** | TI scans `vendor/`, `extensions/`, and `storage/app/tipowerup/` for packages with `extra.tastyigniter-extension` in `composer.json` | Nothing -- automatic |
 | **2. Loading** | PSR-4 autoloading registers your namespace; metadata is read from `composer.json` | Nothing -- automatic |
 | **3. Registration** | `register()` is called on the extension class | Bind services, merge config |
 | **4. Pre-Boot** | `bootingExtension()` auto-discovers translations, migrations, controllers, views, routes from standard directories | Nothing -- automatic |
+| **4.5. Storage Registration** | For extensions installed via DirectInstaller to `storage/app/tipowerup/`, TI PowerUp Extension calls `ExtensionManager::loadExtension()` during boot | Nothing -- handled by TI PowerUp Extension |
 | **5. Boot** | `boot()` is called (**skipped if disabled**) | Register event listeners, extend models/controllers |
 | **6. Install** | DB record created in `extensions` table, migrations run | Write proper `up()` migrations |
 | **7. Uninstall** | Extension disabled, migrations optionally rolled back | Write proper `down()` migrations |

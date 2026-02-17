@@ -62,13 +62,8 @@ class DirectInstaller
                 throw PackageInstallationException::checksumMismatch($packageCode);
             }
 
-            // Extract short name from package code (e.g., "tipowerup.loyaltypoints" -> "loyaltypoints")
-            $shortName = $this->getShortName($packageCode);
-
             // Determine target path based on package type
-            $targetPath = $packageType === 'theme'
-                ? base_path('themes/tipowerup-'.$shortName)
-                : base_path('extensions/tipowerup/'.$shortName);
+            $targetPath = $this->resolveTargetPath($packageCode, $packageType);
 
             // Extract package
             $this->extractPackage($zipPath, $targetPath, $packageCode);
@@ -89,6 +84,11 @@ class DirectInstaller
 
             // Register with TastyIgniter
             $this->registerWithTI($packageCode, $packageType, $targetPath);
+
+            // Publish theme assets to public directory
+            if ($packageType === 'theme') {
+                $this->publishThemeAssets($packageCode, $targetPath);
+            }
 
             // Run migrations for extensions
             if ($packageType === 'extension') {
@@ -161,13 +161,8 @@ class DirectInstaller
                 throw PackageInstallationException::checksumMismatch($packageCode);
             }
 
-            // Extract short name from package code
-            $shortName = $this->getShortName($packageCode);
-
             // Determine target path based on package type
-            $targetPath = $packageType === 'theme'
-                ? base_path('themes/tipowerup-'.$shortName)
-                : base_path('extensions/tipowerup/'.$shortName);
+            $targetPath = $this->resolveTargetPath($packageCode, $packageType);
 
             // Create backup of existing installation
             $backupPath = storage_path(sprintf('app/tipowerup/backups/%s-', $packageCode).date('Y-m-d-His'));
@@ -198,6 +193,11 @@ class DirectInstaller
                     $packageCode,
                     'Invalid package structure - missing required files'
                 );
+            }
+
+            // Publish theme assets to public directory
+            if ($packageType === 'theme') {
+                $this->publishThemeAssets($packageCode, $targetPath);
             }
 
             // Run migrations for extensions
@@ -266,12 +266,12 @@ class DirectInstaller
                 'package_code' => $packageCode,
             ]);
 
-            // Extract short name
             $shortName = $this->getShortName($packageCode);
+            $vendorName = $this->getVendorName($packageCode);
 
-            // Check both possible paths
-            $extensionPath = base_path('extensions/tipowerup/'.$shortName);
-            $themePath = base_path('themes/tipowerup-'.$shortName);
+            // Check storage paths
+            $extensionPath = storage_path('app/tipowerup/extensions/'.$vendorName.'/'.$shortName);
+            $themePath = storage_path('app/tipowerup/themes/'.$vendorName.'-'.$shortName);
 
             $targetPath = File::exists($extensionPath) ? $extensionPath : $themePath;
             $packageType = File::exists($extensionPath) ? 'extension' : 'theme';
@@ -310,6 +310,14 @@ class DirectInstaller
 
             // Delete package directory
             File::deleteDirectory($targetPath);
+
+            // Clean up published theme assets
+            if ($packageType === 'theme') {
+                $assetsPath = public_path('vendor/'.$vendorName.'-'.$shortName);
+                if (File::exists($assetsPath)) {
+                    File::deleteDirectory($assetsPath);
+                }
+            }
 
             // Clear caches
             $this->clearCaches();
@@ -541,9 +549,11 @@ class DirectInstaller
     private function validatePackageStructure(string $path, string $type): bool
     {
         if ($type === 'extension') {
-            // Extensions must have Extension.php and composer.json
-            return File::exists($path.'/Extension.php')
-                && File::exists($path.'/composer.json');
+            // Extensions must have Extension.php (or src/Extension.php) and composer.json
+            $hasExtensionFile = File::exists($path.'/Extension.php')
+                || File::exists($path.'/src/Extension.php');
+
+            return $hasExtensionFile && File::exists($path.'/composer.json');
         }
 
         // Themes must have theme.json
@@ -658,5 +668,63 @@ class DirectInstaller
         $parts = explode('.', $packageCode);
 
         return end($parts);
+    }
+
+    /**
+     * Extract vendor name from package code.
+     */
+    private function getVendorName(string $packageCode): string
+    {
+        $parts = explode('.', $packageCode);
+
+        return $parts[0];
+    }
+
+    /**
+     * Resolve target path for package extraction.
+     */
+    private function resolveTargetPath(string $packageCode, string $packageType): string
+    {
+        $shortName = $this->getShortName($packageCode);
+        $vendorName = $this->getVendorName($packageCode);
+
+        if ($packageType === 'theme') {
+            return storage_path('app/tipowerup/themes/'.$vendorName.'-'.$shortName);
+        }
+
+        return storage_path('app/tipowerup/extensions/'.$vendorName.'/'.$shortName);
+    }
+
+    /**
+     * Publish theme assets to public directory.
+     */
+    private function publishThemeAssets(string $packageCode, string $themePath): void
+    {
+        try {
+            $shortName = $this->getShortName($packageCode);
+            $vendorName = $this->getVendorName($packageCode);
+            $assetsSource = $themePath.'/assets';
+            $assetsTarget = public_path('vendor/'.$vendorName.'-'.$shortName);
+
+            if (!File::exists($assetsSource)) {
+                return;
+            }
+
+            if (!File::exists(dirname($assetsTarget))) {
+                File::makeDirectory(dirname($assetsTarget), 0755, true);
+            }
+
+            File::copyDirectory($assetsSource, $assetsTarget);
+
+            Log::debug('DirectInstaller: Theme assets published', [
+                'package_code' => $packageCode,
+                'target' => $assetsTarget,
+            ]);
+        } catch (Throwable $e) {
+            Log::warning('DirectInstaller: Failed to publish theme assets', [
+                'package_code' => $packageCode,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

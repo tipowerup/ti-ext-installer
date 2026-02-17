@@ -123,7 +123,6 @@
             </div>
         @endif
     @endif
-</div>
 
 <style>
 .tipowerup-installer {
@@ -131,14 +130,13 @@
 }
 
 .tipowerup-installer-onboarding {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh;
-    padding: 2rem 0;
+    background: linear-gradient(135deg, #e0e7ff 0%, #ede9fe 40%, #fce7f3 100%);
 }
 
 .tipowerup-installer-onboarding .card {
     border: none;
     border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
 
 .tipowerup-installer .offcanvas {
@@ -155,3 +153,4 @@
     background-color: #000;
 }
 </style>
+</div>

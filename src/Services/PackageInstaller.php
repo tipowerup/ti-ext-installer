@@ -338,15 +338,16 @@ class PackageInstaller
 
         // Fall back to filesystem detection
         $shortName = $this->getShortName($packageCode);
+        $vendorName = $this->getVendorName($packageCode);
 
-        // Check extensions directory (direct installation)
-        $extensionPath = base_path('extensions/tipowerup/'.$shortName);
+        // Check storage extensions directory (direct installation)
+        $extensionPath = storage_path('app/tipowerup/extensions/'.$vendorName.'/'.$shortName);
         if (File::exists($extensionPath)) {
             return 'direct';
         }
 
-        // Check themes directory (direct installation)
-        $themePath = base_path('themes/tipowerup-'.$shortName);
+        // Check storage themes directory (direct installation)
+        $themePath = storage_path('app/tipowerup/themes/'.$vendorName.'-'.$shortName);
         if (File::exists($themePath)) {
             return 'direct';
         }
@@ -435,6 +436,16 @@ class PackageInstaller
         $parts = explode('.', $packageCode);
 
         return end($parts);
+    }
+
+    /**
+     * Extract vendor name from package code.
+     */
+    private function getVendorName(string $packageCode): string
+    {
+        $parts = explode('.', $packageCode);
+
+        return $parts[0];
     }
 
     /**

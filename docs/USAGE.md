@@ -57,6 +57,7 @@ The system verifies your environment is ready:
 - ✅ cURL extension
 - ✅ Storage directory writable
 - ✅ Vendor directory writable
+- ✅ Public vendor directory writable
 - ✅ Memory limit (256MB+)
 - ✅ Max execution time (120s+)
 
@@ -358,7 +359,7 @@ Disk Free: 50 GB
 **Why:** File permissions issue, disk full, or invalid ZIP
 
 **Solutions:**
-1. Check write permissions on `extensions/` and `themes/` directories
+1. Check write permissions on `storage/app/tipowerup/` directory
 2. Free up disk space (need 2x ZIP size minimum)
 3. Try uninstalling and reinstalling from scratch
 4. Contact support with logs
@@ -366,8 +367,7 @@ Disk Free: 50 GB
 **Check permissions:**
 ```bash
 # Should be writable (755 or 775)
-chmod 755 extensions/
-chmod 755 themes/
+chmod 755 storage/app/tipowerup/
 ```
 
 ### Installation Fails: "Migration Failed"

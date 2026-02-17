@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Tipowerup\Installer\Livewire;
 
 use Illuminate\Contracts\View\View;
+use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Throwable;
-use Tipowerup\Installer\Services\CoreExtensionChecker;
 use Tipowerup\Installer\Services\HealthChecker;
 use Tipowerup\Installer\Services\HostingDetector;
 use Tipowerup\Installer\Services\PowerUpApiClient;
@@ -23,11 +23,6 @@ class Onboarding extends Component
      */
     public array $healthChecks = [];
 
-    /**
-     * @var array<int, array{code: string, name: string, installed: bool, manage_url: string}>
-     */
-    public array $missingCoreExtensions = [];
-
     public bool $apiKeyVerified = false;
 
     public ?array $userProfile = null;
@@ -37,6 +32,20 @@ class Onboarding extends Component
     public ?string $errorMessage = null;
 
     public ?string $detectedMethod = null;
+
+    #[Computed]
+    public function logoDataUri(): string
+    {
+        $logoPath = dirname(__DIR__, 2).'/resources/images/logo.png';
+
+        if (!file_exists($logoPath)) {
+            return '';
+        }
+
+        $data = file_get_contents($logoPath);
+
+        return 'data:image/png;base64,'.base64_encode($data);
+    }
 
     public function mount(): void
     {
@@ -55,10 +64,6 @@ class Onboarding extends Component
     {
         $healthChecker = resolve(HealthChecker::class);
         $this->healthChecks = $healthChecker->runAllChecks();
-
-        // Extract missing core extensions for display
-        $coreExtensionChecker = resolve(CoreExtensionChecker::class);
-        $this->missingCoreExtensions = $coreExtensionChecker->getMissing();
 
         // Detect installation method
         $hostingDetector = resolve(HostingDetector::class);

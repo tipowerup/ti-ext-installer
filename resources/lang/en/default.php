@@ -27,6 +27,7 @@ return [
     'health_curl' => 'cURL Extension',
     'health_storage_writable' => 'Storage Directory Writable',
     'health_vendor_writable' => 'Vendor Directory Writable',
+    'health_public_vendor_writable' => 'Public Vendor Directory Writable',
     'health_memory_limit' => 'Memory Limit (:limit MB)',
     'health_passed' => 'Passed',
     'health_failed' => 'Failed',

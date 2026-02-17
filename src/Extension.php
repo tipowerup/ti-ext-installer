@@ -5,9 +5,14 @@ declare(strict_types=1);
 namespace Tipowerup\Installer;
 
 use Facades\Igniter\System\Helpers\SystemHelper;
+use Igniter\Main\Classes\ThemeManager;
 use Igniter\System\Classes\BaseExtension;
+use Igniter\System\Classes\ExtensionManager;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Livewire\Livewire;
 use Override;
+use Throwable;
 use Tipowerup\Installer\Livewire\InstalledPackages;
 use Tipowerup\Installer\Livewire\InstallerMain;
 use Tipowerup\Installer\Livewire\InstallProgress;
@@ -54,6 +59,7 @@ class Extension extends BaseExtension
     public function boot(): void
     {
         $this->registerLivewireComponents();
+        $this->registerStoragePackages();
     }
 
     /**
@@ -112,5 +118,39 @@ class Extension extends BaseExtension
         Livewire::component('tipowerup-installer::package-detail', PackageDetail::class);
         Livewire::component('tipowerup-installer::install-progress', InstallProgress::class);
         Livewire::component('tipowerup-installer::settings-panel', SettingsPanel::class);
+    }
+
+    /**
+     * Register storage-based packages with TastyIgniter.
+     */
+    protected function registerStoragePackages(): void
+    {
+        $extensionsPath = storage_path('app/tipowerup/extensions');
+        $themesPath = storage_path('app/tipowerup/themes');
+
+        // Register storage-based extensions
+        if (File::isDirectory($extensionsPath)) {
+            $extensionManager = resolve(ExtensionManager::class);
+            $extensionManager->addDirectory($extensionsPath);
+
+            // Must manually load each extension since ExtensionManager already
+            // ran loadExtensions() during __construct() before our boot()
+            foreach (File::glob($extensionsPath.'/*/*/{extension,composer}.json', GLOB_BRACE) as $configFile) {
+                try {
+                    $extensionManager->loadExtension(dirname($configFile));
+                } catch (Throwable $e) {
+                    Log::warning('Failed to load storage extension', [
+                        'path' => dirname($configFile),
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        }
+
+        // Register storage-based themes (lazy loading handles discovery)
+        if (File::isDirectory($themesPath)) {
+            $themeManager = resolve(ThemeManager::class);
+            $themeManager->addDirectory($themesPath);
+        }
     }
 }

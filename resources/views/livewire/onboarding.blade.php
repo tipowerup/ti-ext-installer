@@ -1,17 +1,27 @@
 <div class="tipowerup-installer-onboarding">
-    <div class="container py-5">
+    <div class="container py-3">
         <div class="row justify-content-center">
             <div class="col-lg-8">
+                {{-- Logo --}}
+                @if($this->logoDataUri)
+                    <div class="text-center mb-4">
+                        <img src="{{ $this->logoDataUri }}" alt="TI PowerUp" style="max-width: 220px; height: auto;">
+                    </div>
+                @endif
+
                 {{-- Progress Indicator --}}
-                <div class="mb-5">
-                    <div class="d-flex justify-content-between align-items-center position-relative">
-                        <div class="position-absolute top-50 start-0 end-0 border-top border-2"
-                             style="z-index: 0; margin-top: -1px;"></div>
+                <div class="mb-4">
+                    <div class="d-flex align-items-start position-relative">
+                        {{-- Progress Line --}}
+                        <div class="position-absolute" style="z-index: 0; top: 24px; left: 25%; right: 25%; height: 2px; background-color: #dee2e6;"></div>
+                        <div class="position-absolute" style="z-index: 0; top: 24px; left: 25%; height: 2px; background-color: #4a7cff;
+                            width: {{ $currentStep === 1 ? '0%' : ($currentStep === 2 ? '25%' : '50%') }};
+                            transition: width 0.3s ease;"></div>
 
                         {{-- Step 1 --}}
-                        <div class="d-flex flex-column align-items-center position-relative" style="z-index: 1;">
+                        <div class="d-flex flex-column align-items-center position-relative flex-fill" style="z-index: 1;">
                             <div class="rounded-circle d-flex align-items-center justify-content-center mb-2
-                                {{ $currentStep >= 1 ? 'bg-primary text-white' : 'bg-light text-muted' }}"
+                                {{ $currentStep >= 1 ? 'bg-primary text-white' : 'bg-white text-muted' }}"
                                  style="width: 48px; height: 48px; font-weight: 600;">
                                 @if($currentStep > 1)
                                     <i class="fa fa-check"></i>
@@ -19,13 +29,13 @@
                                     1
                                 @endif
                             </div>
-                            <small class="text-muted">Health Check</small>
+                            <small class="{{ $currentStep >= 1 ? 'text-dark fw-semibold' : 'text-muted' }}">Health Check</small>
                         </div>
 
                         {{-- Step 2 --}}
-                        <div class="d-flex flex-column align-items-center position-relative" style="z-index: 1;">
+                        <div class="d-flex flex-column align-items-center position-relative flex-fill" style="z-index: 1;">
                             <div class="rounded-circle d-flex align-items-center justify-content-center mb-2
-                                {{ $currentStep >= 2 ? 'bg-primary text-white' : 'bg-light text-muted' }}"
+                                {{ $currentStep >= 2 ? 'bg-primary text-white' : 'bg-white text-muted' }}"
                                  style="width: 48px; height: 48px; font-weight: 600;">
                                 @if($currentStep > 2)
                                     <i class="fa fa-check"></i>
@@ -33,49 +43,50 @@
                                     2
                                 @endif
                             </div>
-                            <small class="text-muted">API Key</small>
+                            <small class="{{ $currentStep >= 2 ? 'text-dark fw-semibold' : 'text-muted' }}">API Key</small>
                         </div>
 
                         {{-- Step 3 --}}
-                        <div class="d-flex flex-column align-items-center position-relative" style="z-index: 1;">
+                        <div class="d-flex flex-column align-items-center position-relative flex-fill" style="z-index: 1;">
                             <div class="rounded-circle d-flex align-items-center justify-content-center mb-2
-                                {{ $currentStep >= 3 ? 'bg-primary text-white' : 'bg-light text-muted' }}"
+                                {{ $currentStep >= 3 ? 'bg-primary text-white' : 'bg-white text-muted' }}"
                                  style="width: 48px; height: 48px; font-weight: 600;">
                                 3
                             </div>
-                            <small class="text-muted">Welcome</small>
+                            <small class="{{ $currentStep >= 3 ? 'text-dark fw-semibold' : 'text-muted' }}">Welcome</small>
                         </div>
                     </div>
                 </div>
 
                 {{-- Step Content --}}
                 <div class="card shadow-sm">
-                    <div class="card-body p-5">
+                    <div class="card-body p-4">
                         @if($currentStep === 1)
                             {{-- Step 1: System Health Check --}}
-                            <h4 class="mb-3">{{ lang('tipowerup.installer::default.onboarding_step_health') }}</h4>
-                            <p class="text-muted mb-4">
+                            <h5 class="mb-2">{{ lang('tipowerup.installer::default.onboarding_step_health') }}</h5>
+                            <p class="text-muted mb-3 small">
                                 {{ lang('tipowerup.installer::default.onboarding_health_description') }}
                             </p>
 
                             {{-- Health Checks List --}}
-                            <div class="mb-4">
+                            <div class="mb-3">
                                 @foreach($healthChecks as $check)
-                                    <div class="d-flex align-items-start mb-3 pb-3 border-bottom">
-                                        <div class="me-3">
+                                    <div class="d-flex align-items-center py-2 {{ !$loop->last ? 'border-bottom' : '' }}">
+                                        <div class="me-2">
                                             @if($check['passed'])
-                                                <i class="fa fa-check-circle text-success" style="font-size: 24px;"></i>
+                                                <i class="fa fa-check-circle text-success"></i>
                                             @else
-                                                <i class="fa fa-times-circle text-danger" style="font-size: 24px;"></i>
+                                                <i class="fa fa-times-circle text-danger"></i>
                                             @endif
                                         </div>
                                         <div class="flex-grow-1">
-                                            <h6 class="mb-1">{{ $check['label'] }}</h6>
-                                            <p class="mb-1 text-muted small">{{ $check['message'] }}</p>
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <span class="fw-medium small">{{ $check['label'] }}</span>
+                                                <span class="text-muted small">{{ $check['message'] }}</span>
+                                            </div>
                                             @if(!$check['passed'] && $check['fix'])
-                                                <div class="alert alert-{{ $check['critical'] ? 'danger' : 'warning' }} mt-2 mb-0 py-2 px-3 small">
-                                                    <strong>{{ lang('tipowerup.installer::default.health_fix_instructions') }}:</strong>
-                                                    {{ $check['fix'] }}
+                                                <div class="alert alert-{{ $check['critical'] ? 'danger' : 'warning' }} mt-1 mb-0 py-1 px-2 small">
+                                                    <strong>Fix:</strong> {{ $check['fix'] }}
                                                 </div>
                                             @endif
                                         </div>
@@ -83,38 +94,13 @@
                                 @endforeach
                             </div>
 
-                            {{-- Missing Core Extensions Warning --}}
-                            @if(count($missingCoreExtensions) > 0)
-                                <div class="alert alert-danger" role="alert">
-                                    <div class="d-flex align-items-start">
-                                        <i class="fa fa-exclamation-triangle me-2 mt-1"></i>
-                                        <div>
-                                            <h6 class="mb-2">Missing Required TI Core Extensions</h6>
-                                            <p class="mb-2">
-                                                The following TI core extensions must be installed before using PowerUp Installer:
-                                            </p>
-                                            <ul class="mb-2">
-                                                @foreach($missingCoreExtensions as $ext)
-                                                    <li><strong>{{ $ext['name'] }}</strong> ({{ $ext['code'] }})</li>
-                                                @endforeach
-                                            </ul>
-                                            <a href="{{ $missingCoreExtensions[0]['manage_url'] ?? '#' }}"
-                                               class="btn btn-sm btn-danger">
-                                                <i class="fa fa-external-link-alt me-1"></i>
-                                                Manage Extensions
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            @endif
-
                             {{-- Community Links --}}
-                            <div class="mt-4 pt-3 border-top">
-                                <h6 class="mb-3 text-muted small">Need Help?</h6>
-                                <div class="d-flex flex-wrap gap-2">
+                            <div class="mt-3 pt-2 border-top">
+                                <div class="d-flex flex-wrap gap-2 align-items-center">
+                                    <span class="text-muted small">Need Help?</span>
                                     @foreach($communityLinks as $link)
                                         <a href="{{ $link['url'] }}" target="_blank" rel="noopener"
-                                           class="btn btn-outline-secondary btn-sm">
+                                           class="btn btn-outline-secondary btn-sm py-0 px-2">
                                             <i class="fa fa-external-link-alt me-1"></i>
                                             {{ $link['label'] }}
                                         </a>
@@ -123,10 +109,10 @@
                             </div>
 
                             {{-- Next Button --}}
-                            <div class="mt-4">
+                            <div class="mt-3">
                                 <button wire:click="proceedToApiKey" type="button"
-                                        class="btn btn-primary btn-lg w-100"
-                                        @if(!canProceedFromHealth()) disabled @endif>
+                                        class="btn btn-primary w-100"
+                                        @if(!$this->canProceedFromHealth()) disabled @endif>
                                     Next: Enter API Key
                                     <i class="fa fa-arrow-right ms-2"></i>
                                 </button>
@@ -134,16 +120,16 @@
 
                         @elseif($currentStep === 2)
                             {{-- Step 2: Enter API Key --}}
-                            <h4 class="mb-3">{{ lang('tipowerup.installer::default.onboarding_step_api_key') }}</h4>
-                            <p class="text-muted mb-4">
+                            <h5 class="mb-2">{{ lang('tipowerup.installer::default.onboarding_step_api_key') }}</h5>
+                            <p class="text-muted mb-3 small">
                                 {{ lang('tipowerup.installer::default.onboarding_api_key_description') }}
                             </p>
 
                             {{-- API Key Input --}}
-                            <div class="mb-4">
-                                <label for="apiKey" class="form-label">API Key</label>
+                            <div class="mb-3">
+                                <label for="apiKey" class="form-label small">API Key</label>
                                 <input wire:model.defer="apiKey" type="text" class="form-control form-control-lg"
-                                       id="apiKey" placeholder="pk_live_..." @if($isVerifying) disabled @endif>
+                                       id="apiKey" placeholder="PUK-XXXX-XXXX-XXXX-XXXX" @if($isVerifying) disabled @endif>
                                 <div class="form-text">
                                     {{ lang('tipowerup.installer::default.onboarding_api_key_help') }}
                                 </div>
@@ -151,14 +137,14 @@
 
                             {{-- Error Message --}}
                             @if($errorMessage)
-                                <div class="alert alert-danger" role="alert">
+                                <div class="alert alert-danger py-2 small" role="alert">
                                     <i class="fa fa-exclamation-circle me-2"></i>
                                     {{ $errorMessage }}
                                 </div>
                             @endif
 
                             {{-- Verify Button --}}
-                            <div class="d-flex gap-2 mt-4">
+                            <div class="d-flex gap-2 mt-3">
                                 <button wire:click="backToHealth" type="button" class="btn btn-outline-secondary"
                                         @if($isVerifying) disabled @endif>
                                     <i class="fa fa-arrow-left me-1"></i>
@@ -199,10 +185,10 @@
                                     <p class="text-muted mb-4">{{ $userProfile['email'] }}</p>
                                 @endif
 
-                                <div class="bg-light rounded p-4 mb-4">
+                                <div class="bg-light rounded p-3 mb-4">
                                     <div class="d-flex align-items-center justify-content-center">
                                         <i class="fa fa-cog text-primary me-2"></i>
-                                        <span>
+                                        <span class="small">
                                             <strong>Auto-detected install method:</strong>
                                             @if($detectedMethod === 'composer')
                                                 Composer Installation
@@ -213,7 +199,7 @@
                                     </div>
                                 </div>
 
-                                <div class="d-flex flex-column gap-3">
+                                <div class="d-flex flex-column gap-2">
                                     <button wire:click="completeOnboarding" type="button"
                                             class="btn btn-primary btn-lg">
                                         <i class="fa fa-check me-2"></i>

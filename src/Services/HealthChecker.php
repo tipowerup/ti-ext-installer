@@ -4,17 +4,14 @@ declare(strict_types=1);
 
 namespace Tipowerup\Installer\Services;
 
+use Illuminate\Support\Facades\File;
+
 class HealthChecker
 {
-    private const int MIN_PHP_VERSION = 80300; // PHP 8.3.0
-
-    private const int MIN_MEMORY_MB = 128;
-
-    private const int RECOMMENDED_MEMORY_MB = 512;
+    private const int MIN_PHP_VERSION = 80200; // PHP 8.2.0
 
     public function __construct(
         private readonly HostingDetector $hostingDetector,
-        private readonly CoreExtensionChecker $coreExtensionChecker,
     ) {}
 
     /**
@@ -36,12 +33,12 @@ class HealthChecker
 
         $checks[] = [
             'key' => 'php_version',
-            'label' => lang('tipowerup.installer::default.health_php_version', ['version' => '8.3+']),
+            'label' => lang('tipowerup.installer::default.health_php_version', ['version' => '8.2+']),
             'passed' => $phpPassed,
             'message' => $phpPassed
                 ? sprintf('PHP %s detected', $phpVersion)
-                : sprintf('PHP %s detected, but 8.3+ is required', $phpVersion),
-            'fix' => $phpPassed ? null : 'Contact your hosting provider to upgrade PHP to version 8.3 or higher.',
+                : sprintf('PHP %s detected, but 8.2+ is required', $phpVersion),
+            'fix' => $phpPassed ? null : 'Contact your hosting provider to upgrade PHP to version 8.2 or higher.',
             'critical' => true,
         ];
 
@@ -83,56 +80,21 @@ class HealthChecker
             'critical' => true,
         ];
 
-        // Vendor Writable Check (warning only for composer method)
-        $vendorWritable = $hostingAnalysis['vendor_writable'] ?? false;
+        // Public Vendor Directory Writable Check (for theme assets)
+        $publicVendorPath = public_path('vendor');
+        $publicVendorWritable = File::exists($publicVendorPath)
+            ? is_writable($publicVendorPath)
+            : is_writable(public_path());
 
         $checks[] = [
-            'key' => 'vendor_writable',
-            'label' => lang('tipowerup.installer::default.health_vendor_writable'),
-            'passed' => $vendorWritable,
-            'message' => $vendorWritable
-                ? 'Vendor directory is writable'
-                : 'Vendor directory is not writable (only needed for Composer method)',
-            'fix' => $vendorWritable ? null : 'Set proper permissions on the vendor directory. Run: chmod -R 755 vendor',
-            'critical' => false, // Only warning since direct extraction doesn't need this
-        ];
-
-        // Memory Limit Check
-        $memoryLimitMB = $this->hostingDetector->getMemoryLimitMB();
-        $memoryPassed = $memoryLimitMB >= self::MIN_MEMORY_MB || $memoryLimitMB === -1;
-
-        $memoryMessage = match (true) {
-            $memoryLimitMB === -1 => 'Memory limit: Unlimited',
-            $memoryLimitMB >= self::RECOMMENDED_MEMORY_MB => sprintf('Memory limit: %dMB (Good)', $memoryLimitMB),
-            $memoryLimitMB >= self::MIN_MEMORY_MB => sprintf('Memory limit: %dMB (Adequate)', $memoryLimitMB),
-            default => sprintf('Memory limit: %sMB (Low)', $memoryLimitMB),
-        };
-
-        $checks[] = [
-            'key' => 'memory_limit',
-            'label' => lang('tipowerup.installer::default.health_memory_limit', ['limit' => $memoryLimitMB === -1 ? 'Unlimited' : $memoryLimitMB]),
-            'passed' => $memoryPassed,
-            'message' => $memoryMessage,
-            'fix' => $memoryPassed ? null : 'Increase PHP memory_limit to at least 128M. Contact your hosting provider or update your php.ini file.',
-            'critical' => false, // Warning only
-        ];
-
-        // TI Core Extensions Check
-        $missingExtensions = $this->coreExtensionChecker->getMissing();
-        $allCoreExtensionsInstalled = $this->coreExtensionChecker->allInstalled();
-
-        $extensionMessage = $allCoreExtensionsInstalled
-            ? 'All required TI core extensions are installed'
-            : 'Missing '.count($missingExtensions).' required TI core extension(s): '.
-              implode(', ', array_column($missingExtensions, 'name'));
-
-        $checks[] = [
-            'key' => 'core_extensions',
-            'label' => 'TI Core Extensions',
-            'passed' => $allCoreExtensionsInstalled,
-            'message' => $extensionMessage,
-            'fix' => $allCoreExtensionsInstalled ? null : 'Install the missing TI core extensions from the Extensions page before using PowerUp Installer.',
-            'critical' => true,
+            'key' => 'public_vendor_writable',
+            'label' => lang('tipowerup.installer::default.health_public_vendor_writable'),
+            'passed' => $publicVendorWritable,
+            'message' => $publicVendorWritable
+                ? 'Public vendor directory is writable'
+                : 'Public vendor directory is not writable',
+            'fix' => $publicVendorWritable ? null : 'Set proper permissions on the public/vendor directory. Run: chmod -R 755 public/vendor',
+            'critical' => false,
         ];
 
         return $checks;
@@ -164,15 +126,15 @@ class HealthChecker
         return [
             [
                 'label' => lang('tipowerup.installer::default.link_support'),
-                'url' => 'https://tipowerup.com/support',
+                'url' => 'https://tipowerup.com/support?ref=tipowerup-installer',
             ],
             [
                 'label' => lang('tipowerup.installer::default.link_discord'),
-                'url' => 'https://discord.gg/tipowerup',
+                'url' => 'https://tipowerup.com/social/discord?ref=tipowerup-installer',
             ],
             [
                 'label' => lang('tipowerup.installer::default.link_reddit'),
-                'url' => 'https://reddit.com/r/tipowerup',
+                'url' => 'https://tipowerup.com/social/reddit?ref=tipowerup-installer',
             ],
         ];
     }
