@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace Tipowerup\Installer\Services;
 
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 
 class HealthChecker
 {
     private const int MIN_PHP_VERSION = 80200; // PHP 8.2.0
+
+    private const int API_PING_TIMEOUT = 5;
 
     public function __construct(
         private readonly HostingDetector $hostingDetector,
@@ -95,6 +99,27 @@ class HealthChecker
                 : 'Public vendor directory is not writable',
             'fix' => $publicVendorWritable ? null : 'Set proper permissions on the public/vendor directory. Run: chmod -R 755 public/vendor',
             'critical' => false,
+        ];
+
+        // API Connectivity Check
+        $apiReachable = false;
+
+        try {
+            $response = Http::timeout(self::API_PING_TIMEOUT)->get(PowerUpApiClient::BASE_URL);
+            $apiReachable = $response->successful() || $response->status() < 500;
+        } catch (ConnectionException) {
+            $apiReachable = false;
+        }
+
+        $checks[] = [
+            'key' => 'api_connectivity',
+            'label' => lang('tipowerup.installer::default.health_api_connectivity'),
+            'passed' => $apiReachable,
+            'message' => $apiReachable
+                ? 'TI PowerUp API is reachable'
+                : 'Unable to reach the TI PowerUp API',
+            'fix' => $apiReachable ? null : 'Ensure your server has outbound internet access. Check that your firewall or hosting provider allows connections to tipowerup.test.',
+            'critical' => true,
         ];
 
         return $checks;

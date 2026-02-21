@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Tipowerup\Installer\Livewire;
 
+use Igniter\System\Models\Settings;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Throwable;
+use Tipowerup\Installer\Services\ComposerPharManager;
 use Tipowerup\Installer\Services\HealthChecker;
 use Tipowerup\Installer\Services\HostingDetector;
 use Tipowerup\Installer\Services\PowerUpApiClient;
@@ -65,8 +67,18 @@ class Onboarding extends Component
         $healthChecker = resolve(HealthChecker::class);
         $this->healthChecks = $healthChecker->runAllChecks();
 
-        // Detect installation method
         $hostingDetector = resolve(HostingDetector::class);
+
+        // Auto-download composer.phar if environment supports Composer but no system composer
+        $memory = $hostingDetector->getMemoryLimitMB();
+        $hasAdequateMemory = $memory >= 128 || $memory === -1;
+
+        if ($hostingDetector->canProcOpen() && $hasAdequateMemory && $hostingDetector->getComposerSource() === null) {
+            $pharManager = resolve(ComposerPharManager::class);
+            $pharManager->download();
+            $hostingDetector->clearCache();
+        }
+
         $this->detectedMethod = $hostingDetector->getRecommendedMethod();
     }
 
@@ -108,8 +120,8 @@ class Onboarding extends Component
 
             $response = $apiClient->verifyKey();
 
-            // Store the API key in params
-            params()->set('tipowerup_api_key', $this->apiKey);
+            // Store the PowerUp key
+            Settings::setPref('tipowerup_api_key', $this->apiKey);
 
             // Set user profile from response
             $this->userProfile = [
@@ -119,6 +131,7 @@ class Onboarding extends Component
             ];
 
             $this->apiKeyVerified = true;
+            $this->currentStep = 3;
         } catch (Throwable $e) {
             $this->errorMessage = $e->getMessage();
         } finally {
@@ -129,7 +142,7 @@ class Onboarding extends Component
     public function proceedToWelcome(): void
     {
         if (!$this->apiKeyVerified) {
-            $this->errorMessage = 'Please verify your API key first.';
+            $this->errorMessage = lang('tipowerup.installer::default.error_powerup_key_not_verified');
 
             return;
         }
@@ -141,7 +154,7 @@ class Onboarding extends Component
     public function completeOnboarding(): void
     {
         // Mark onboarding as complete
-        params()->set('tipowerup_onboarded', true);
+        Settings::setPref('tipowerup_onboarded', true);
 
         // Dispatch event to parent component
         $this->dispatch('onboarding-completed');

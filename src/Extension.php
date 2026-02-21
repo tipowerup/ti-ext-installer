@@ -74,7 +74,7 @@ class Extension extends BaseExtension
                     'installer' => [
                         'priority' => 10,
                         'class' => 'installer',
-                        'href' => admin_url('tipowerup/installer/installer'),
+                        'href' => admin_url('tipowerup/installer'),
                         'title' => lang('tipowerup.installer::default.text_title'),
                         'permission' => 'Tipowerup.Installer.*',
                     ],

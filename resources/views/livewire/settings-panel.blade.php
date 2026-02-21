@@ -14,7 +14,7 @@
         </div>
     @endif
 
-    {{-- API Key Section --}}
+    {{-- PowerUp Key Section --}}
     <div class="mb-4">
         <label class="form-label">{{ lang('tipowerup.installer::default.settings_api_key') }}</label>
 
@@ -22,8 +22,7 @@
             <div class="d-flex align-items-center gap-2">
                 <input type="text" class="form-control" value="{{ $apiKey }}" disabled>
                 <button wire:click="toggleApiKeyInput" type="button" class="btn btn-outline-primary">
-                    <i class="fa fa-edit me-1"></i>
-                    Change
+                    <i class="fa fa-edit"></i>
                 </button>
             </div>
             <small class="form-text text-muted">
@@ -86,7 +85,19 @@
 
     {{-- Environment Information Section --}}
     <div class="border-top pt-4">
-        <h6 class="mb-3">{{ lang('tipowerup.installer::default.settings_environment') }}</h6>
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h6 class="mb-0">{{ lang('tipowerup.installer::default.settings_environment') }}</h6>
+            <button wire:click="refreshEnvironmentInfo" type="button"
+                    class="btn btn-outline-secondary btn-sm"
+                    wire:loading.attr="disabled" wire:target="refreshEnvironmentInfo">
+                <span wire:loading.remove wire:target="refreshEnvironmentInfo">
+                    <i class="fa fa-sync-alt"></i>
+                </span>
+                <span wire:loading wire:target="refreshEnvironmentInfo">
+                    <span class="spinner-border spinner-border-sm" role="status"></span>
+                </span>
+            </button>
+        </div>
         <ul class="list-unstyled tipowerup-installer__health-list">
             <li class="tipowerup-installer__health-item">
                 <div class="tipowerup-installer__health-icon tipowerup-installer__health-icon--success">
@@ -127,15 +138,51 @@
             </li>
 
             <li class="tipowerup-installer__health-item">
-                <div class="tipowerup-installer__health-icon tipowerup-installer__health-icon--{{ $environmentInfo['composer_available'] ? 'success' : 'warning' }}">
-                    <i class="fa fa-{{ $environmentInfo['composer_available'] ? 'check' : 'exclamation-triangle' }}"></i>
-                </div>
-                <div class="tipowerup-installer__health-content">
-                    <div class="tipowerup-installer__health-title">Composer</div>
-                    <p class="tipowerup-installer__health-description mb-0">
-                        {{ $environmentInfo['composer_available'] ? 'Available' : 'Not available' }}
-                    </p>
-                </div>
+                @if(($environmentInfo['composer_source'] ?? null) === 'system')
+                    <div class="tipowerup-installer__health-icon tipowerup-installer__health-icon--success">
+                        <i class="fa fa-check"></i>
+                    </div>
+                    <div class="tipowerup-installer__health-content">
+                        <div class="tipowerup-installer__health-title">Composer</div>
+                        <p class="tipowerup-installer__health-description mb-0">
+                            {{ lang('tipowerup.installer::default.composer_source_system') }}
+                        </p>
+                    </div>
+                @elseif(($environmentInfo['composer_source'] ?? null) === 'downloaded')
+                    <div class="tipowerup-installer__health-icon tipowerup-installer__health-icon--success">
+                        <i class="fa fa-check"></i>
+                    </div>
+                    <div class="tipowerup-installer__health-content">
+                        <div class="tipowerup-installer__health-title">Composer</div>
+                        <p class="tipowerup-installer__health-description mb-0">
+                            {{ lang('tipowerup.installer::default.composer_source_downloaded') }}
+                        </p>
+                    </div>
+                @else
+                    <div class="tipowerup-installer__health-icon tipowerup-installer__health-icon--warning">
+                        <i class="fa fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="tipowerup-installer__health-content">
+                        <div class="tipowerup-installer__health-title">Composer</div>
+                        <div class="d-flex align-items-center gap-2">
+                            <p class="tipowerup-installer__health-description mb-0">
+                                {{ lang('tipowerup.installer::default.composer_source_none') }}
+                            </p>
+                            @if($environmentInfo['can_proc_open'] ?? false)
+                                <button wire:click="downloadComposerPhar" type="button"
+                                        class="btn btn-outline-primary btn-sm"
+                                        wire:loading.attr="disabled" wire:target="downloadComposerPhar">
+                                    <span wire:loading.remove wire:target="downloadComposerPhar">
+                                        <i class="fa fa-download me-1"></i>
+                                    </span>
+                                    <span wire:loading wire:target="downloadComposerPhar">
+                                        <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                    </span>
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+                @endif
             </li>
 
             <li class="tipowerup-installer__health-item">
@@ -162,7 +209,7 @@
                 </div>
             </li>
 
-            <li class="tipowerup-installer__health-item border-top mt-3 pt-3">
+            <li class="tipowerup-installer__health-item">
                 <div class="tipowerup-installer__health-icon tipowerup-installer__health-icon--success">
                     <i class="fa fa-thumbs-up"></i>
                 </div>

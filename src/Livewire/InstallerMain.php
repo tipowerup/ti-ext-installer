@@ -19,6 +19,8 @@ class InstallerMain extends Component
 
     public ?string $selectedPackage = null;
 
+    public array $selectedPackageData = [];
+
     public bool $showInstallProgress = false;
 
     /**
@@ -62,14 +64,16 @@ class InstallerMain extends Component
         $this->showSettings = false;
     }
 
-    public function viewPackageDetail(string $packageCode): void
+    public function viewPackageDetail(string $packageCode, array $packageData = []): void
     {
         $this->selectedPackage = $packageCode;
+        $this->selectedPackageData = $packageData;
     }
 
     public function closePackageDetail(): void
     {
         $this->selectedPackage = null;
+        $this->selectedPackageData = [];
     }
 
     #[On('onboarding-completed')]
@@ -105,9 +109,9 @@ class InstallerMain extends Component
     }
 
     #[On('view-package-detail')]
-    public function onViewPackageDetail(string $packageCode): void
+    public function onViewPackageDetail(string $packageCode, array $packageData = []): void
     {
-        $this->viewPackageDetail($packageCode);
+        $this->viewPackageDetail($packageCode, $packageData);
     }
 
     public function render(): View

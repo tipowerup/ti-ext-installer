@@ -127,13 +127,130 @@ it('recommends direct when memory insufficient', function (): void {
 
         public function getMemoryLimitMB(): int
         {
-            return 256; // Below 512 threshold
+            return 64; // Below 128 threshold
         }
     };
 
     $method = $detector->getRecommendedMethod();
 
     expect($method)->toBe('direct');
+});
+
+it('getComposerSource returns system when system composer available', function (): void {
+    $detector = new class extends HostingDetector
+    {
+        public function isSystemComposerAvailable(): bool
+        {
+            return true;
+        }
+
+        public function isComposerPharAvailable(): bool
+        {
+            return false;
+        }
+    };
+
+    expect($detector->getComposerSource())->toBe('system');
+});
+
+it('getComposerSource returns downloaded when only phar available', function (): void {
+    $detector = new class extends HostingDetector
+    {
+        public function isSystemComposerAvailable(): bool
+        {
+            return false;
+        }
+
+        public function isComposerPharAvailable(): bool
+        {
+            return true;
+        }
+    };
+
+    expect($detector->getComposerSource())->toBe('downloaded');
+});
+
+it('getComposerSource returns null when neither available', function (): void {
+    $detector = new class extends HostingDetector
+    {
+        public function isSystemComposerAvailable(): bool
+        {
+            return false;
+        }
+
+        public function isComposerPharAvailable(): bool
+        {
+            return false;
+        }
+    };
+
+    expect($detector->getComposerSource())->toBeNull();
+});
+
+it('isComposerAvailable returns true when only phar available', function (): void {
+    $detector = new class extends HostingDetector
+    {
+        public function isSystemComposerAvailable(): bool
+        {
+            return false;
+        }
+
+        public function isComposerPharAvailable(): bool
+        {
+            return true;
+        }
+    };
+
+    expect($detector->isComposerAvailable())->toBeTrue();
+});
+
+it('getComposerSource prefers system over downloaded', function (): void {
+    $detector = new class extends HostingDetector
+    {
+        public function isSystemComposerAvailable(): bool
+        {
+            return true;
+        }
+
+        public function isComposerPharAvailable(): bool
+        {
+            return true;
+        }
+    };
+
+    expect($detector->getComposerSource())->toBe('system');
+});
+
+it('recommends composer when proc_open available and only phar composer available', function (): void {
+    $detector = new class extends HostingDetector
+    {
+        public function canProcOpen(): bool
+        {
+            return true;
+        }
+
+        public function isComposerAvailable(): bool
+        {
+            return true;
+        }
+
+        public function isSystemComposerAvailable(): bool
+        {
+            return false;
+        }
+
+        public function isComposerPharAvailable(): bool
+        {
+            return true;
+        }
+
+        public function getMemoryLimitMB(): int
+        {
+            return 256;
+        }
+    };
+
+    expect($detector->getRecommendedMethod())->toBe('composer');
 });
 
 // Note: analyze(), clearCache() methods require Cache facade

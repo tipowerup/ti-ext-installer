@@ -13,7 +13,9 @@ use Tipowerup\Installer\Exceptions\LicenseValidationException;
 
 class PowerUpApiClient
 {
-    private const string BASE_URL = 'https://api.tipowerup.com/v1';
+    // private const string BASE_URL = 'https://api.tipowerup.com/v1';
+
+    public const string BASE_URL = 'https://tipowerup.test';
 
     private const int TIMEOUT_SECONDS = 30;
 
@@ -33,46 +35,46 @@ class PowerUpApiClient
 
     public function verifyKey(): array
     {
-        $data = $this->makeRequest('POST', '/api/v1/verify-key', [
+        $data = $this->makeRequest('POST', '/api/v1/powerup/validate', [
             'domain' => request()->getHost(),
         ]);
 
-        if (!($data['valid'] ?? false)) {
+        if (!($data['success'] ?? false)) {
             throw new LicenseValidationException(
-                $data['message'] ?? 'API key verification failed.'
+                $data['message'] ?? 'PowerUp key verification failed.'
             );
         }
 
-        return $data;
+        return $data['data'] ?? [];
     }
 
     public function verifyLicense(string $packageCode): array
     {
-        $data = $this->makeRequest('POST', '/api/v1/verify-license', [
+        $data = $this->makeRequest('POST', '/api/v1/powerup/verify-key', [
             'package_code' => $packageCode,
             'domain' => request()->getHost(),
             'ti_version' => app()->version(),
         ]);
 
-        if (!($data['valid'] ?? false)) {
+        if (!($data['success'] ?? false)) {
             throw new LicenseValidationException(
                 $data['message'] ?? 'License validation failed for this package.'
             );
         }
 
-        return $data;
+        return $data['data'] ?? [];
     }
 
     public function checkUpdates(array $installedPackages): array
     {
-        return $this->makeRequest('POST', '/api/v1/check-updates', [
+        return $this->makeRequest('POST', '/api/v1/powerup/check-updates', [
             'packages' => $installedPackages,
         ]);
     }
 
     public function getMyPackages(): array
     {
-        return $this->makeRequest('GET', '/api/v1/my-packages');
+        return $this->makeRequest('GET', '/api/v1/powerup/products');
     }
 
     public function getMarketplace(array $filters = []): array
@@ -84,12 +86,22 @@ class PowerUpApiClient
             'per_page' => $filters['per_page'] ?? null,
         ]);
 
-        return $this->makeRequest('GET', '/api/v1/marketplace', $queryParams);
+        return $this->makeRequest('GET', '/api/v1/powerup/marketplace', $queryParams);
     }
 
     public function getPackageDetail(string $packageCode): array
     {
-        return $this->makeRequest('GET', '/api/v1/packages/'.$packageCode);
+        return $this->makeRequest('GET', '/api/v1/powerup/packages/'.$packageCode);
+    }
+
+    public function getProductVersion(string $slug): array
+    {
+        return $this->makeRequest('GET', '/api/v1/powerup/product/'.$slug.'/version');
+    }
+
+    public function downloadProduct(string $slug): array
+    {
+        return $this->makeRequest('GET', '/api/v1/powerup/product/'.$slug.'/download');
     }
 
     private function makeRequest(string $method, string $uri, array $data = []): array

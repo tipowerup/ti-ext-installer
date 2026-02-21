@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Tipowerup\Installer\Livewire;
 
+use Igniter\System\Models\Settings;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
 use Throwable;
+use Tipowerup\Installer\Services\ComposerPharManager;
 use Tipowerup\Installer\Services\HostingDetector;
 use Tipowerup\Installer\Services\PowerUpApiClient;
 
@@ -36,7 +38,7 @@ class SettingsPanel extends Component
 
     public function loadCurrentSettings(): void
     {
-        // Load current API key (masked)
+        // Load current PowerUp key (masked)
         $rawApiKey = params('tipowerup_api_key', '');
         if ($rawApiKey) {
             $this->apiKey = $this->maskApiKey($rawApiKey);
@@ -61,15 +63,15 @@ class SettingsPanel extends Component
         try {
             // Validate install method
             if (!in_array($this->installMethod, ['auto', 'direct', 'composer'], true)) {
-                $this->errorMessage = 'Invalid installation method selected.';
+                $this->errorMessage = lang('tipowerup.installer::default.error_invalid_install_method');
 
                 return;
             }
 
             // Save install method preference
-            params()->set('tipowerup_install_method', $this->installMethod);
+            Settings::setPref('tipowerup_install_method', $this->installMethod);
 
-            // If new API key provided, verify and save it
+            // If new PowerUp key provided, verify and save it
             if ($this->newApiKey !== '' && $this->newApiKey !== '0') {
                 $this->changeApiKey();
 
@@ -97,20 +99,13 @@ class SettingsPanel extends Component
                 return;
             }
 
-            // Verify the new API key
+            // Verify the new PowerUp key
             $apiClient = resolve(PowerUpApiClient::class);
             $apiClient->setApiKey($this->newApiKey);
+            $apiClient->verifyKey();
 
-            $verifyResult = $apiClient->verifyKey();
-
-            if (!($verifyResult['valid'] ?? false)) {
-                $this->errorMessage = lang('tipowerup.installer::default.error_api_key_invalid');
-
-                return;
-            }
-
-            // Save the new API key
-            params()->set('tipowerup_api_key', $this->newApiKey);
+            // Save the new PowerUp key
+            Settings::setPref('tipowerup_api_key', $this->newApiKey);
 
             // Update masked display
             $this->apiKey = $this->maskApiKey($this->newApiKey);
@@ -135,6 +130,34 @@ class SettingsPanel extends Component
         $this->showApiKeyInput = !$this->showApiKeyInput;
         $this->newApiKey = '';
         $this->errorMessage = null;
+    }
+
+    public function downloadComposerPhar(): void
+    {
+        $this->errorMessage = null;
+        $this->successMessage = null;
+
+        try {
+            $pharManager = resolve(ComposerPharManager::class);
+
+            if ($pharManager->download()) {
+                $hostingDetector = resolve(HostingDetector::class);
+                $hostingDetector->clearCache();
+                $this->loadEnvironmentInfo();
+
+                $this->successMessage = lang('tipowerup.installer::default.success_composer_phar_downloaded');
+            } else {
+                $this->errorMessage = lang('tipowerup.installer::default.error_composer_phar_download_failed');
+            }
+        } catch (Throwable $e) {
+            $this->errorMessage = $e->getMessage();
+        }
+    }
+
+    public function refreshEnvironmentInfo(): void
+    {
+        $hostingDetector = resolve(HostingDetector::class);
+        $this->environmentInfo = $hostingDetector->freshAnalyze();
     }
 
     public function closePanel(): void

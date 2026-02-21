@@ -43,7 +43,7 @@
                                     2
                                 @endif
                             </div>
-                            <small class="{{ $currentStep >= 2 ? 'text-dark fw-semibold' : 'text-muted' }}">API Key</small>
+                            <small class="{{ $currentStep >= 2 ? 'text-dark fw-semibold' : 'text-muted' }}">PowerUp Key</small>
                         </div>
 
                         {{-- Step 3 --}}
@@ -113,7 +113,7 @@
                                 <button wire:click="proceedToApiKey" type="button"
                                         class="btn btn-primary w-100"
                                         @if(!$this->canProceedFromHealth()) disabled @endif>
-                                    Next: Enter API Key
+                                    Next: Enter PowerUp Key
                                     <i class="fa fa-arrow-right ms-2"></i>
                                 </button>
                             </div>
@@ -125,9 +125,9 @@
                                 {{ lang('tipowerup.installer::default.onboarding_api_key_description') }}
                             </p>
 
-                            {{-- API Key Input --}}
+                            {{-- PowerUp Key Input --}}
                             <div class="mb-3">
-                                <label for="apiKey" class="form-label small">API Key</label>
+                                <label for="apiKey" class="form-label small">PowerUp Key</label>
                                 <input wire:model.defer="apiKey" type="text" class="form-control form-control-lg"
                                        id="apiKey" placeholder="PUK-XXXX-XXXX-XXXX-XXXX" @if($isVerifying) disabled @endif>
                                 <div class="form-text">

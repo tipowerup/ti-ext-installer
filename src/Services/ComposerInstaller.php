@@ -340,12 +340,50 @@ class ComposerInstaller
     }
 
     /**
+     * Determine the Composer binary to use.
+     *
+     * Priority: system composer -> downloaded phar -> auto-download phar -> fail.
+     *
+     * @return list<string>
+     */
+    private function findComposerBinary(): array
+    {
+        // 1. Try system composer
+        try {
+            exec('composer --version 2>&1', $output, $exitCode);
+
+            if ($exitCode === 0) {
+                return ['composer'];
+            }
+        } catch (Throwable) {
+            // System composer not available
+        }
+
+        // 2. Check downloaded phar
+        $pharManager = resolve(ComposerPharManager::class);
+
+        if ($pharManager->isPharAvailable()) {
+            return $pharManager->getPharCommand();
+        }
+
+        // 3. Safety net: try to download phar
+        if ($pharManager->download()) {
+            return $pharManager->getPharCommand();
+        }
+
+        throw new PackageInstallationException(
+            'Composer is not available. Neither system composer nor composer.phar could be found or downloaded.'
+        );
+    }
+
+    /**
      * Run Composer command using Symfony Process.
      */
     private function runComposer(array $command): string
     {
-        // Prepend 'composer' to command
-        array_unshift($command, 'composer');
+        // Determine the Composer binary
+        $binary = $this->findComposerBinary();
+        array_unshift($command, ...$binary);
 
         $process = new Process(
             command: $command,

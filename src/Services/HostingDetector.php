@@ -16,7 +16,26 @@ class HostingDetector
 
     public function analyze(): array
     {
-        return Cache::remember(self::CACHE_KEY, self::CACHE_TTL_SECONDS, fn (): array => [
+        return Cache::remember(self::CACHE_KEY, self::CACHE_TTL_SECONDS, fn (): array => $this->performAnalysis());
+    }
+
+    /**
+     * Run a fresh analysis, bypassing and replacing the cache.
+     */
+    public function freshAnalyze(): array
+    {
+        Cache::forget(self::CACHE_KEY);
+
+        $result = $this->performAnalysis();
+
+        Cache::put(self::CACHE_KEY, $result, self::CACHE_TTL_SECONDS);
+
+        return $result;
+    }
+
+    private function performAnalysis(): array
+    {
+        return [
             'can_exec' => $this->canExec(),
             'can_shell_exec' => $this->canShellExec(),
             'can_proc_open' => $this->canProcOpen(),
@@ -25,10 +44,11 @@ class HostingDetector
             'has_zip_archive' => $this->hasZipArchive(),
             'has_curl' => $this->hasCurl(),
             'composer_available' => $this->isComposerAvailable(),
+            'composer_source' => $this->getComposerSource(),
             'storage_writable' => $this->isStorageWritable(),
             'vendor_writable' => $this->isVendorWritable(),
             'recommended_method' => $this->getRecommendedMethod(),
-        ]);
+        ];
     }
 
     public function canExec(): bool
@@ -83,23 +103,105 @@ class HostingDetector
 
     public function isComposerAvailable(): bool
     {
+        return $this->getComposerSource() !== null;
+    }
+
+    public function isSystemComposerAvailable(): bool
+    {
         if (!$this->canExec()) {
             return false;
         }
 
         try {
             exec('composer --version 2>&1', $output, $exitCode);
-
-            return $exitCode === 0;
+            if ($exitCode === 0) {
+                return true;
+            }
         } catch (Throwable) {
-            return false;
+            // Fall through to path checks
         }
+
+        // Composer not in PATH — check common locations
+        foreach ($this->getComposerSearchPaths() as $path) {
+            if (is_file($path) && is_executable($path)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get the full path to the system composer binary, or null if not found.
+     */
+    public function getComposerBinaryPath(): ?string
+    {
+        if (!$this->canExec()) {
+            return null;
+        }
+
+        try {
+            exec('which composer 2>/dev/null', $output, $exitCode);
+            if ($exitCode === 0 && !empty($output[0])) {
+                return $output[0];
+            }
+        } catch (Throwable) {
+            // Fall through
+        }
+
+        foreach ($this->getComposerSearchPaths() as $path) {
+            if (is_file($path) && is_executable($path)) {
+                return $path;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function getComposerSearchPaths(): array
+    {
+        $paths = [
+            '/usr/local/bin/composer',
+            '/usr/bin/composer',
+        ];
+
+        $home = getenv('HOME') ?: (getenv('USERPROFILE') ?: '');
+        if ($home !== '') {
+            $paths[] = $home.'/.composer/vendor/bin/composer';
+            $paths[] = $home.'/.config/composer/vendor/bin/composer';
+        }
+
+        return $paths;
+    }
+
+    public function isComposerPharAvailable(): bool
+    {
+        return file_exists(storage_path('app/tipowerup/bin/composer.phar'));
+    }
+
+    /**
+     * Determine the source of Composer: 'system', 'downloaded', or null.
+     */
+    public function getComposerSource(): ?string
+    {
+        if ($this->isSystemComposerAvailable()) {
+            return 'system';
+        }
+
+        if ($this->isComposerPharAvailable()) {
+            return 'downloaded';
+        }
+
+        return null;
     }
 
     public function getRecommendedMethod(): string
     {
         $memory = $this->getMemoryLimitMB();
-        $hasAdequateMemory = ($memory >= 512 || $memory === -1);
+        $hasAdequateMemory = ($memory >= 128 || $memory === -1);
 
         if ($this->canProcOpen() && $hasAdequateMemory && $this->isComposerAvailable()) {
             return 'composer';

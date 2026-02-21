@@ -1,7 +1,7 @@
 /**
  * TI PowerUp Installer - Custom Styles
  * Scoped to .tipowerup-installer to avoid conflicts with TastyIgniter admin panel
- * Built on Bootstrap 5 with modern, clean aesthetics
+ * Built on Bootstrap 5 with modern, compact marketplace aesthetics
  */
 
 /* ============================================================================
@@ -10,17 +10,20 @@
 
 .tipowerup-installer {
     /* Brand Colors */
-    --ti-primary: #FF4900;
-    --ti-primary-hover: #e04000;
-    --ti-primary-light: #fff5f2;
-    --ti-success: #28a745;
-    --ti-success-light: #d4edda;
-    --ti-danger: #dc3545;
-    --ti-danger-light: #f8d7da;
-    --ti-warning: #ffc107;
-    --ti-warning-light: #fff3cd;
-    --ti-info: #17a2b8;
-    --ti-info-light: #d1ecf1;
+    --ti-primary: #3B82F6;
+    --ti-primary-hover: #2563EB;
+    --ti-primary-light: #EFF6FF;
+    --ti-accent: #F97316;
+    --ti-dark: #1E293B;
+    --ti-darker: #0F172A;
+    --ti-success: #22C55E;
+    --ti-success-light: #dcfce7;
+    --ti-danger: #EF4444;
+    --ti-danger-light: #fee2e2;
+    --ti-warning: #F59E0B;
+    --ti-warning-light: #fef3c7;
+    --ti-info: #3B82F6;
+    --ti-info-light: #EFF6FF;
 
     /* Neutral Palette */
     --ti-gray-50: #fafbfc;
@@ -37,17 +40,17 @@
     /* Spacing */
     --ti-spacing-xs: 0.25rem;
     --ti-spacing-sm: 0.5rem;
-    --ti-spacing-md: 1rem;
-    --ti-spacing-lg: 1.5rem;
-    --ti-spacing-xl: 2rem;
-    --ti-spacing-2xl: 3rem;
-    --ti-spacing-3xl: 4rem;
+    --ti-spacing-md: 0.75rem;
+    --ti-spacing-lg: 1rem;
+    --ti-spacing-xl: 1.5rem;
+    --ti-spacing-2xl: 2rem;
+    --ti-spacing-3xl: 2.5rem;
 
     /* Border Radius */
-    --ti-border-radius-sm: 0.25rem;
-    --ti-border-radius: 0.5rem;
-    --ti-border-radius-lg: 0.75rem;
-    --ti-border-radius-xl: 1rem;
+    --ti-border-radius-sm: 0.2rem;
+    --ti-border-radius: 0.375rem;
+    --ti-border-radius-lg: 0.5rem;
+    --ti-border-radius-xl: 0.75rem;
 
     /* Shadows */
     --ti-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -75,22 +78,22 @@
 .tipowerup-installer {
     max-width: 1400px;
     margin: 0 auto;
-    padding: var(--ti-spacing-xl);
+    padding: var(--ti-spacing-lg);
 }
 
 .tipowerup-installer__header {
-    margin-bottom: var(--ti-spacing-2xl);
+    margin-bottom: var(--ti-spacing-lg);
 }
 
 .tipowerup-installer__title {
-    font-size: 1.75rem;
+    font-size: 1.375rem;
     font-weight: var(--ti-font-weight-bold);
     color: var(--ti-gray-900);
-    margin-bottom: var(--ti-spacing-sm);
+    margin-bottom: var(--ti-spacing-xs);
 }
 
 .tipowerup-installer__subtitle {
-    font-size: 1rem;
+    font-size: 0.875rem;
     color: var(--ti-gray-600);
     font-weight: normal;
 }
@@ -113,18 +116,18 @@
 .tipowerup-installer .card-header {
     background-color: var(--ti-gray-50);
     border-bottom: 1px solid var(--ti-gray-200);
-    padding: var(--ti-spacing-lg);
+    padding: var(--ti-spacing-md) var(--ti-spacing-lg);
     border-radius: var(--ti-border-radius-lg) var(--ti-border-radius-lg) 0 0;
 }
 
 .tipowerup-installer .card-body {
-    padding: var(--ti-spacing-xl);
+    padding: var(--ti-spacing-lg) var(--ti-spacing-xl);
 }
 
 .tipowerup-installer .card-footer {
     background-color: var(--ti-gray-50);
     border-top: 1px solid var(--ti-gray-200);
-    padding: var(--ti-spacing-lg);
+    padding: var(--ti-spacing-md) var(--ti-spacing-lg);
     border-radius: 0 0 var(--ti-border-radius-lg) var(--ti-border-radius-lg);
 }
 
@@ -134,10 +137,11 @@
 
 .tipowerup-installer .btn {
     font-weight: var(--ti-font-weight-medium);
-    padding: 0.625rem 1.25rem;
+    padding: 0.4rem 0.875rem;
     border-radius: var(--ti-border-radius);
     transition: var(--ti-transition);
     border: none;
+    font-size: 0.875rem;
 }
 
 .tipowerup-installer .btn-primary {
@@ -156,7 +160,7 @@
 }
 
 .tipowerup-installer .btn-outline-primary {
-    border: 2px solid var(--ti-primary);
+    border: 1.5px solid var(--ti-primary);
     color: var(--ti-primary);
     background: transparent;
 }
@@ -179,13 +183,13 @@
 }
 
 .tipowerup-installer .btn-sm {
-    padding: 0.375rem 0.875rem;
-    font-size: 0.875rem;
+    padding: 0.3rem 0.625rem;
+    font-size: 0.8125rem;
 }
 
 .tipowerup-installer .btn-lg {
-    padding: 0.875rem 1.75rem;
-    font-size: 1.125rem;
+    padding: 0.625rem 1.25rem;
+    font-size: 1rem;
 }
 
 /* ============================================================================
@@ -194,11 +198,11 @@
 
 .tipowerup-installer .form-control,
 .tipowerup-installer .form-select {
-    border: 2px solid var(--ti-gray-300);
+    border: 1.5px solid var(--ti-gray-300);
     border-radius: var(--ti-border-radius);
-    padding: 0.625rem 1rem;
+    padding: 0.4rem 0.75rem;
     transition: var(--ti-transition);
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
 }
 
 .tipowerup-installer .form-control:focus,
@@ -211,12 +215,13 @@
 .tipowerup-installer .form-label {
     font-weight: var(--ti-font-weight-medium);
     color: var(--ti-gray-700);
-    margin-bottom: var(--ti-spacing-sm);
+    margin-bottom: var(--ti-spacing-xs);
+    font-size: 0.875rem;
 }
 
 .tipowerup-installer .form-text {
     color: var(--ti-gray-600);
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
 }
 
 /* ============================================================================
@@ -224,7 +229,7 @@
    ========================================================================= */
 
 .tipowerup-installer__wizard {
-    margin-bottom: var(--ti-spacing-2xl);
+    margin-bottom: var(--ti-spacing-xl);
 }
 
 /* Step Indicator */
@@ -232,8 +237,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: var(--ti-spacing-2xl);
-    padding: var(--ti-spacing-lg) 0;
+    margin-bottom: var(--ti-spacing-xl);
+    padding: var(--ti-spacing-md) 0;
 }
 
 .tipowerup-installer__step {
@@ -243,8 +248,8 @@
 }
 
 .tipowerup-installer__step-circle {
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     background-color: var(--ti-gray-200);
     color: var(--ti-gray-600);
@@ -252,7 +257,7 @@
     align-items: center;
     justify-content: center;
     font-weight: var(--ti-font-weight-bold);
-    font-size: 1.125rem;
+    font-size: 1rem;
     transition: var(--ti-transition);
     z-index: 1;
 }
@@ -260,7 +265,7 @@
 .tipowerup-installer__step--active .tipowerup-installer__step-circle {
     background-color: var(--ti-primary);
     color: white;
-    box-shadow: 0 0 0 4px var(--ti-primary-light);
+    box-shadow: 0 0 0 3px var(--ti-primary-light);
 }
 
 .tipowerup-installer__step--completed .tipowerup-installer__step-circle {
@@ -270,10 +275,10 @@
 
 .tipowerup-installer__step-label {
     position: absolute;
-    top: 60px;
+    top: 50px;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     font-weight: var(--ti-font-weight-medium);
     color: var(--ti-gray-600);
     white-space: nowrap;
@@ -284,10 +289,10 @@
 }
 
 .tipowerup-installer__step-connector {
-    width: 120px;
+    width: 100px;
     height: 2px;
     background-color: var(--ti-gray-300);
-    margin: 0 var(--ti-spacing-md);
+    margin: 0 var(--ti-spacing-sm);
     transition: var(--ti-transition-slow);
 }
 
@@ -305,7 +310,7 @@
 .tipowerup-installer__health-item {
     display: flex;
     align-items: center;
-    padding: var(--ti-spacing-lg);
+    padding: 0.75rem var(--ti-spacing-lg);
     border-bottom: 1px solid var(--ti-gray-200);
     transition: var(--ti-transition);
 }
@@ -319,14 +324,15 @@
 }
 
 .tipowerup-installer__health-icon {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     margin-right: var(--ti-spacing-md);
     flex-shrink: 0;
+    font-size: 0.8125rem;
 }
 
 .tipowerup-installer__health-icon--success {
@@ -351,11 +357,12 @@
 .tipowerup-installer__health-title {
     font-weight: var(--ti-font-weight-medium);
     color: var(--ti-gray-900);
-    margin-bottom: var(--ti-spacing-xs);
+    margin-bottom: 0;
+    font-size: 0.875rem;
 }
 
 .tipowerup-installer__health-description {
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     color: var(--ti-gray-600);
     margin: 0;
 }
@@ -363,39 +370,41 @@
 /* Community Links */
 .tipowerup-installer__community-links {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: var(--ti-spacing-lg);
-    margin-top: var(--ti-spacing-xl);
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--ti-spacing-md);
+    margin-top: var(--ti-spacing-lg);
 }
 
 .tipowerup-installer__community-link {
     display: flex;
     align-items: center;
-    padding: var(--ti-spacing-lg);
-    border: 2px solid var(--ti-gray-200);
+    padding: var(--ti-spacing-md);
+    border: 1px solid var(--ti-gray-200);
     border-radius: var(--ti-border-radius-lg);
     text-decoration: none;
     color: var(--ti-gray-900);
     transition: var(--ti-transition);
+    font-size: 0.875rem;
 }
 
 .tipowerup-installer__community-link:hover {
     border-color: var(--ti-primary);
     background-color: var(--ti-primary-light);
-    transform: translateY(-2px);
+    transform: translateY(-1px);
     box-shadow: var(--ti-shadow-md);
 }
 
 .tipowerup-installer__community-icon {
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
     border-radius: var(--ti-border-radius);
     background-color: var(--ti-gray-100);
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: var(--ti-spacing-md);
+    margin-right: var(--ti-spacing-sm);
     flex-shrink: 0;
+    font-size: 0.875rem;
 }
 
 /* ============================================================================
@@ -404,23 +413,24 @@
 
 .tipowerup-installer__tabs {
     border-bottom: 2px solid var(--ti-gray-200);
-    margin-bottom: var(--ti-spacing-xl);
+    margin-bottom: var(--ti-spacing-lg);
 }
 
 .tipowerup-installer__tabs .nav-link {
     border: none;
-    border-bottom: 3px solid transparent;
+    border-bottom: 2px solid transparent;
     color: var(--ti-gray-600);
     font-weight: var(--ti-font-weight-medium);
-    padding: var(--ti-spacing-md) var(--ti-spacing-lg);
+    padding: var(--ti-spacing-sm) var(--ti-spacing-lg);
     margin-bottom: -2px;
     transition: var(--ti-transition);
+    font-size: 0.875rem;
 }
 
 .tipowerup-installer__tabs .nav-link:hover {
     color: var(--ti-gray-900);
     background-color: var(--ti-gray-50);
-    border-radius: var(--ti-border-radius) var(--ti-border-radius) 0 0;
+    border-radius: var(--ti-border-radius-sm) var(--ti-border-radius-sm) 0 0;
 }
 
 .tipowerup-installer__tabs .nav-link.active {
@@ -439,84 +449,96 @@
 
 .tipowerup-installer__packages-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: var(--ti-spacing-lg);
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--ti-spacing-md);
 }
 
 .tipowerup-installer__package-card {
-    border: 2px solid var(--ti-gray-200);
+    border: 1px solid var(--ti-gray-200);
     border-radius: var(--ti-border-radius-lg);
-    padding: var(--ti-spacing-lg);
+    padding: 0;
     background: white;
     transition: var(--ti-transition);
     position: relative;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 .tipowerup-installer__package-card:hover {
     border-color: var(--ti-primary);
-    box-shadow: var(--ti-shadow-lg);
-    transform: translateY(-4px);
+    box-shadow: var(--ti-shadow-md);
+    transform: translateY(-2px);
 }
 
 .tipowerup-installer__package-header {
     display: flex;
     align-items: flex-start;
-    margin-bottom: var(--ti-spacing-md);
+    margin-bottom: var(--ti-spacing-sm);
 }
 
 .tipowerup-installer__package-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: var(--ti-border-radius-lg);
-    background: linear-gradient(135deg, var(--ti-primary), var(--ti-primary-hover));
+    width: 44px;
+    height: 44px;
+    border-radius: var(--ti-border-radius);
+    background-color: var(--ti-primary);
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    font-size: 1.5rem;
+    font-size: 1.125rem;
     font-weight: var(--ti-font-weight-bold);
-    margin-right: var(--ti-spacing-md);
+    margin-right: var(--ti-spacing-sm);
     flex-shrink: 0;
 }
 
 .tipowerup-installer__package-info {
     flex: 1;
+    min-width: 0;
 }
 
 .tipowerup-installer__package-name {
-    font-size: 1.125rem;
+    font-size: 0.9375rem;
     font-weight: var(--ti-font-weight-semibold);
     color: var(--ti-gray-900);
-    margin-bottom: var(--ti-spacing-xs);
+    margin-bottom: 0.125rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .tipowerup-installer__package-version {
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     color: var(--ti-gray-600);
 }
 
 .tipowerup-installer__package-description {
-    color: var(--ti-gray-700);
-    font-size: 0.9375rem;
-    line-height: 1.5;
-    margin-bottom: var(--ti-spacing-md);
+    color: var(--ti-gray-600);
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    margin-bottom: var(--ti-spacing-sm);
+    flex-grow: 1;
+    min-height: calc(2 * 0.8125rem * 1.45); /* 2 lines */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .tipowerup-installer__package-meta {
     display: flex;
-    gap: var(--ti-spacing-sm);
+    gap: var(--ti-spacing-xs);
     flex-wrap: wrap;
-    margin-bottom: var(--ti-spacing-md);
+    margin-bottom: var(--ti-spacing-sm);
 }
 
 .tipowerup-installer__package-footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--ti-spacing-md);
+    gap: var(--ti-spacing-sm);
     margin-top: auto;
-    padding-top: var(--ti-spacing-md);
+    padding-top: var(--ti-spacing-sm);
     border-top: 1px solid var(--ti-gray-200);
 }
 
@@ -524,12 +546,13 @@
 .tipowerup-installer__badge {
     display: inline-flex;
     align-items: center;
-    padding: 0.25rem 0.625rem;
+    padding: 0.125rem 0.5rem;
     border-radius: var(--ti-border-radius-sm);
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     font-weight: var(--ti-font-weight-semibold);
     text-transform: uppercase;
     letter-spacing: 0.025em;
+    line-height: 1.4;
 }
 
 .tipowerup-installer__badge--active {
@@ -553,8 +576,8 @@
 }
 
 .tipowerup-installer__badge--theme {
-    background-color: #e8d4f6;
-    color: #6f42c1;
+    background-color: #FFF7ED;
+    color: #F97316;
 }
 
 .tipowerup-installer__badge--extension {
@@ -590,7 +613,7 @@
     right: 0;
     bottom: 0;
     width: 100%;
-    max-width: 480px;
+    max-width: 440px;
     background: white;
     box-shadow: var(--ti-shadow-xl);
     z-index: 1050;
@@ -605,7 +628,7 @@
 }
 
 .tipowerup-installer__settings-header {
-    padding: var(--ti-spacing-xl);
+    padding: var(--ti-spacing-lg) var(--ti-spacing-xl);
     border-bottom: 1px solid var(--ti-gray-200);
     display: flex;
     align-items: center;
@@ -613,7 +636,7 @@
 }
 
 .tipowerup-installer__settings-title {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
     font-weight: var(--ti-font-weight-bold);
     color: var(--ti-gray-900);
     margin: 0;
@@ -622,10 +645,10 @@
 .tipowerup-installer__settings-close {
     background: none;
     border: none;
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     color: var(--ti-gray-600);
     cursor: pointer;
-    padding: var(--ti-spacing-sm);
+    padding: var(--ti-spacing-xs);
     line-height: 1;
     transition: var(--ti-transition);
 }
@@ -637,14 +660,14 @@
 .tipowerup-installer__settings-body {
     flex: 1;
     overflow-y: auto;
-    padding: var(--ti-spacing-xl);
+    padding: var(--ti-spacing-lg) var(--ti-spacing-xl);
 }
 
 .tipowerup-installer__settings-footer {
-    padding: var(--ti-spacing-xl);
+    padding: var(--ti-spacing-md) var(--ti-spacing-xl);
     border-top: 1px solid var(--ti-gray-200);
     display: flex;
-    gap: var(--ti-spacing-md);
+    gap: var(--ti-spacing-sm);
     justify-content: flex-end;
 }
 
@@ -653,15 +676,15 @@
    ========================================================================= */
 
 .tipowerup-installer__progress-modal {
-    max-width: 600px;
+    max-width: 560px;
 }
 
 .tipowerup-installer__progress-bar {
-    height: 12px;
+    height: 8px;
     border-radius: var(--ti-border-radius);
     background-color: var(--ti-gray-200);
     overflow: hidden;
-    margin-bottom: var(--ti-spacing-lg);
+    margin-bottom: var(--ti-spacing-md);
 }
 
 .tipowerup-installer__progress-fill {
@@ -698,9 +721,10 @@
 .tipowerup-installer__progress-step {
     display: flex;
     align-items: center;
-    padding: var(--ti-spacing-md);
+    padding: var(--ti-spacing-sm) var(--ti-spacing-md);
     border-radius: var(--ti-border-radius);
-    margin-bottom: var(--ti-spacing-sm);
+    margin-bottom: var(--ti-spacing-xs);
+    font-size: 0.875rem;
 }
 
 .tipowerup-installer__progress-step--completed {
@@ -720,14 +744,15 @@
 }
 
 .tipowerup-installer__progress-step-icon {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: var(--ti-spacing-md);
+    margin-right: var(--ti-spacing-sm);
     flex-shrink: 0;
+    font-size: 0.75rem;
 }
 
 .tipowerup-installer__progress-step--completed .tipowerup-installer__progress-step-icon {
@@ -747,46 +772,109 @@
 }
 
 /* ============================================================================
+   Bundle Card Styles
+   ========================================================================= */
+
+.tipowerup-installer__badge--bundle {
+    background-color: #EDE9FE;
+    color: #7C3AED;
+}
+
+.tipowerup-installer__package-card--bundle {
+    border: 2px solid transparent;
+    background: linear-gradient(white, white) padding-box,
+                linear-gradient(135deg, #3B82F6, #8B5CF6) border-box;
+    position: relative;
+}
+
+.tipowerup-installer__package-card--bundle:hover {
+    border-color: transparent;
+    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.2);
+}
+
+.tipowerup-installer__bundle-discount-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--ti-border-radius-sm);
+    font-size: 0.6875rem;
+    font-weight: var(--ti-font-weight-bold);
+    background: linear-gradient(135deg, #F97316, #ef4444);
+    color: white;
+    letter-spacing: 0.025em;
+}
+
+.tipowerup-installer__price-original {
+    font-size: 0.75rem;
+    color: var(--ti-gray-500);
+    text-decoration: line-through;
+}
+
+.tipowerup-installer__price-current {
+    font-size: 0.875rem;
+    font-weight: var(--ti-font-weight-bold);
+    color: var(--ti-primary);
+}
+
+.tipowerup-installer__cover-image {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    border-radius: var(--ti-border-radius-lg) var(--ti-border-radius-lg) 0 0;
+    display: block;
+}
+
+.tipowerup-installer__package-card--has-cover {
+    padding-top: 0;
+}
+
+.tipowerup-installer__package-card--has-cover .tipowerup-installer__package-body {
+    padding: var(--ti-spacing-lg);
+}
+
+/* ============================================================================
    Marketplace
    ========================================================================= */
 
 .tipowerup-installer__search-bar {
     position: relative;
-    margin-bottom: var(--ti-spacing-xl);
+    margin-bottom: var(--ti-spacing-md);
 }
 
 .tipowerup-installer__search-input {
-    padding-left: 3rem;
-    padding-right: 1rem;
-    height: 48px;
-    font-size: 1rem;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    height: 40px;
+    font-size: 0.875rem;
 }
 
 .tipowerup-installer__search-icon {
     position: absolute;
-    left: 1rem;
+    left: 0.875rem;
     top: 50%;
     transform: translateY(-50%);
     color: var(--ti-gray-500);
     pointer-events: none;
+    font-size: 0.875rem;
 }
 
 .tipowerup-installer__filters {
     display: flex;
-    gap: var(--ti-spacing-md);
-    margin-bottom: var(--ti-spacing-xl);
+    gap: var(--ti-spacing-xs);
     flex-wrap: wrap;
 }
 
 .tipowerup-installer__filter-btn {
-    padding: 0.5rem 1rem;
-    border: 2px solid var(--ti-gray-300);
+    padding: 0.3rem 0.75rem;
+    border: 1px solid var(--ti-gray-300);
     background: white;
     border-radius: var(--ti-border-radius);
     font-weight: var(--ti-font-weight-medium);
     color: var(--ti-gray-700);
     cursor: pointer;
     transition: var(--ti-transition);
+    font-size: 0.8125rem;
+    line-height: 1.4;
 }
 
 .tipowerup-installer__filter-btn:hover {
@@ -800,58 +888,95 @@
     color: white;
 }
 
+.tipowerup-installer__filter-btn--active:hover {
+    background-color: var(--ti-primary-hover);
+    border-color: var(--ti-primary-hover);
+    color: white;
+}
+
 .tipowerup-installer__marketplace-card {
     position: relative;
 }
 
 .tipowerup-installer__marketplace-card-price {
     position: absolute;
-    top: var(--ti-spacing-lg);
-    right: var(--ti-spacing-lg);
+    top: var(--ti-spacing-md);
+    right: var(--ti-spacing-md);
     background: white;
-    padding: 0.375rem 0.75rem;
-    border-radius: var(--ti-border-radius);
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--ti-border-radius-sm);
     font-weight: var(--ti-font-weight-bold);
     color: var(--ti-primary);
-    box-shadow: var(--ti-shadow-sm);
+    box-shadow: var(--ti-shadow-xs);
+    font-size: 0.8125rem;
+    border: 1px solid var(--ti-gray-200);
 }
 
 .tipowerup-installer__marketplace-actions {
     display: flex;
-    gap: var(--ti-spacing-sm);
+    gap: var(--ti-spacing-xs);
 }
 
 .tipowerup-installer__btn-buy {
-    flex: 1;
     background: linear-gradient(135deg, var(--ti-primary), var(--ti-primary-hover));
     color: white;
     border: none;
-    padding: 0.625rem 1rem;
+    padding: 0.3rem 0.75rem;
     border-radius: var(--ti-border-radius);
     font-weight: var(--ti-font-weight-semibold);
     transition: var(--ti-transition);
+    font-size: 0.8125rem;
 }
 
 .tipowerup-installer__btn-buy:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--ti-shadow-lg);
+    transform: translateY(-1px);
+    box-shadow: var(--ti-shadow-md);
+    color: white;
 }
 
 .tipowerup-installer__btn-install {
-    flex: 1;
     background-color: var(--ti-success);
     color: white;
     border: none;
-    padding: 0.625rem 1rem;
+    padding: 0.3rem 0.75rem;
     border-radius: var(--ti-border-radius);
     font-weight: var(--ti-font-weight-semibold);
     transition: var(--ti-transition);
+    font-size: 0.8125rem;
 }
 
 .tipowerup-installer__btn-install:hover {
     background-color: #218838;
-    transform: translateY(-2px);
-    box-shadow: var(--ti-shadow-lg);
+    transform: translateY(-1px);
+    box-shadow: var(--ti-shadow-md);
+    color: white;
+}
+
+/* ============================================================================
+   Marketplace List View
+   ========================================================================= */
+
+.tipowerup-installer__marketplace-list .table {
+    font-size: 0.875rem;
+}
+
+.tipowerup-installer__marketplace-list .table th {
+    font-weight: var(--ti-font-weight-semibold);
+    color: var(--ti-gray-700);
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    padding: 0.5rem 0.75rem;
+    border-top: none;
+}
+
+.tipowerup-installer__marketplace-list .table td {
+    padding: 0.625rem 0.75rem;
+    vertical-align: middle;
+}
+
+.tipowerup-installer__marketplace-list .table tbody tr:hover {
+    background-color: var(--ti-gray-50);
 }
 
 /* ============================================================================
@@ -861,42 +986,43 @@
 .tipowerup-installer__warning-banner {
     background: linear-gradient(135deg, var(--ti-danger), #c82333);
     color: white;
-    padding: var(--ti-spacing-lg) var(--ti-spacing-xl);
+    padding: var(--ti-spacing-md) var(--ti-spacing-lg);
     border-radius: var(--ti-border-radius-lg);
-    margin-bottom: var(--ti-spacing-xl);
+    margin-bottom: var(--ti-spacing-lg);
     box-shadow: var(--ti-shadow-md);
 }
 
 .tipowerup-installer__warning-title {
-    font-size: 1.125rem;
+    font-size: 1rem;
     font-weight: var(--ti-font-weight-bold);
-    margin-bottom: var(--ti-spacing-sm);
+    margin-bottom: var(--ti-spacing-xs);
     display: flex;
     align-items: center;
 }
 
 .tipowerup-installer__warning-icon {
     margin-right: var(--ti-spacing-sm);
-    font-size: 1.5rem;
+    font-size: 1.125rem;
 }
 
 .tipowerup-installer__warning-message {
-    margin-bottom: var(--ti-spacing-md);
+    margin-bottom: var(--ti-spacing-sm);
     opacity: 0.95;
+    font-size: 0.875rem;
 }
 
 .tipowerup-installer__warning-extensions {
     display: flex;
-    gap: var(--ti-spacing-sm);
+    gap: var(--ti-spacing-xs);
     flex-wrap: wrap;
 }
 
 .tipowerup-installer__warning-badge {
     background-color: rgba(255, 255, 255, 0.2);
     color: white;
-    padding: 0.375rem 0.75rem;
-    border-radius: var(--ti-border-radius);
-    font-size: 0.875rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--ti-border-radius-sm);
+    font-size: 0.8125rem;
     font-weight: var(--ti-font-weight-medium);
 }
 
@@ -910,28 +1036,29 @@
 }
 
 .tipowerup-installer__empty-icon {
-    width: 80px;
-    height: 80px;
-    margin: 0 auto var(--ti-spacing-lg);
+    width: 60px;
+    height: 60px;
+    margin: 0 auto var(--ti-spacing-md);
     background-color: var(--ti-gray-100);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2rem;
+    font-size: 1.5rem;
     color: var(--ti-gray-500);
 }
 
 .tipowerup-installer__empty-title {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
     font-weight: var(--ti-font-weight-semibold);
     color: var(--ti-gray-900);
-    margin-bottom: var(--ti-spacing-sm);
+    margin-bottom: var(--ti-spacing-xs);
 }
 
 .tipowerup-installer__empty-message {
     color: var(--ti-gray-600);
-    margin-bottom: var(--ti-spacing-lg);
+    margin-bottom: var(--ti-spacing-md);
+    font-size: 0.875rem;
 }
 
 /* ============================================================================
@@ -939,9 +1066,10 @@
    ========================================================================= */
 
 .tipowerup-installer .alert {
-    border-radius: var(--ti-border-radius-lg);
+    border-radius: var(--ti-border-radius);
     border: none;
-    padding: var(--ti-spacing-lg);
+    padding: var(--ti-spacing-sm) var(--ti-spacing-lg);
+    font-size: 0.875rem;
 }
 
 .tipowerup-installer .alert-success {
@@ -970,9 +1098,9 @@
 
 .tipowerup-installer__spinner {
     display: inline-block;
-    width: 20px;
-    height: 20px;
-    border: 3px solid rgba(255, 255, 255, 0.3);
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
     border-radius: 50%;
     border-top-color: white;
     animation: spin 0.8s linear infinite;
@@ -991,13 +1119,510 @@
 }
 
 /* ============================================================================
+   View Toggle
+   ========================================================================= */
+
+.tipowerup-installer__view-toggle {
+    display: flex;
+    border: 1px solid var(--ti-gray-300);
+    border-radius: var(--ti-border-radius);
+    overflow: hidden;
+}
+
+.tipowerup-installer__view-toggle-btn {
+    background: white;
+    border: none;
+    padding: 0.3rem 0.625rem;
+    color: var(--ti-gray-500);
+    cursor: pointer;
+    transition: var(--ti-transition-fast);
+    font-size: 0.8125rem;
+    line-height: 1;
+}
+
+.tipowerup-installer__view-toggle-btn:not(:last-child) {
+    border-right: 1px solid var(--ti-gray-300);
+}
+
+.tipowerup-installer__view-toggle-btn--active {
+    background-color: var(--ti-primary);
+    color: white;
+}
+
+.tipowerup-installer__view-toggle-btn:hover:not(.tipowerup-installer__view-toggle-btn--active) {
+    background-color: var(--ti-gray-100);
+    color: var(--ti-gray-700);
+}
+
+/* ============================================================================
+   Loading Overlay
+   ========================================================================= */
+
+.tipowerup-installer__loading-overlay {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    min-height: 300px;
+    text-align: center;
+}
+
+.tipowerup-installer__filter-btn--loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* ============================================================================
+   Page Card
+   ========================================================================= */
+
+.tipowerup-installer__page-card {
+    background: white;
+    border: 1px solid var(--ti-gray-200);
+    border-radius: var(--ti-border-radius-xl);
+    box-shadow: var(--ti-shadow-sm);
+    padding: var(--ti-spacing-xl);
+}
+
+/* ============================================================================
+   Screenshot Thumbnails
+   ========================================================================= */
+
+.tipowerup-installer__screenshot-thumb {
+    height: 120px;
+    border-radius: var(--ti-border-radius);
+    border: 1px solid var(--ti-gray-200);
+    cursor: pointer;
+    transition: var(--ti-transition);
+    flex-shrink: 0;
+}
+
+.tipowerup-installer__screenshot-thumb:hover {
+    border-color: var(--ti-primary);
+    box-shadow: var(--ti-shadow-md);
+    transform: translateY(-2px);
+}
+
+/* Screenshot Grid (Tab View) */
+.tipowerup-installer__screenshot-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--ti-spacing-md);
+}
+
+.tipowerup-installer__screenshot-grid-item {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    border-radius: var(--ti-border-radius);
+    border: 1px solid var(--ti-gray-200);
+    cursor: pointer;
+    transition: var(--ti-transition);
+}
+
+.tipowerup-installer__screenshot-grid-item:hover {
+    border-color: var(--ti-primary);
+    box-shadow: var(--ti-shadow-md);
+    transform: translateY(-2px);
+}
+
+/* ============================================================================
+   Lightbox
+   ========================================================================= */
+
+.tipowerup-installer__lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background-color: rgba(0, 0, 0, 0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tipowerup-installer__lightbox-enter {
+    transition: opacity 0.2s ease;
+}
+
+.tipowerup-installer__lightbox-leave {
+    transition: opacity 0.15s ease;
+}
+
+.tipowerup-installer__lightbox-image {
+    max-width: 90vw;
+    max-height: 85vh;
+    object-fit: contain;
+    border-radius: var(--ti-border-radius-lg);
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+.tipowerup-installer__lightbox-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background-color: rgba(255, 255, 255, 0.15);
+    color: white;
+    font-size: 1.125rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--ti-transition-fast);
+    z-index: 1;
+}
+
+.tipowerup-installer__lightbox-close:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+.tipowerup-installer__lightbox-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background-color: rgba(255, 255, 255, 0.15);
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--ti-transition-fast);
+    z-index: 1;
+}
+
+.tipowerup-installer__lightbox-nav:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+.tipowerup-installer__lightbox-nav--prev {
+    left: 1rem;
+}
+
+.tipowerup-installer__lightbox-nav--next {
+    right: 1rem;
+}
+
+.tipowerup-installer__lightbox-counter {
+    position: absolute;
+    bottom: 1.25rem;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.8125rem;
+    font-weight: var(--ti-font-weight-medium);
+    user-select: none;
+}
+
+@media (max-width: 768px) {
+    .tipowerup-installer__lightbox-nav {
+        width: 36px;
+        height: 36px;
+        font-size: 0.875rem;
+    }
+
+    .tipowerup-installer__lightbox-nav--prev {
+        left: 0.5rem;
+    }
+
+    .tipowerup-installer__lightbox-nav--next {
+        right: 0.5rem;
+    }
+}
+
+/* ============================================================================
+   Prose / Markdown Content
+   Overrides TI admin's Bootstrap reboot styles for rendered markdown.
+   Scoped via .tipowerup-installer .prose — higher specificity, no !important.
+   ========================================================================= */
+
+.tipowerup-installer .prose {
+    font-size: 0.9rem;
+    line-height: 1.75;
+    color: var(--ti-gray-800);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* --- Headings --- */
+
+.tipowerup-installer .prose h1 {
+    font-size: 1.5rem;
+    font-weight: var(--ti-font-weight-bold);
+    color: var(--ti-gray-900);
+    margin-top: 1.75rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.375rem;
+    border-bottom: 1px solid var(--ti-gray-200);
+    line-height: 1.3;
+}
+
+.tipowerup-installer .prose h2 {
+    font-size: 1.25rem;
+    font-weight: var(--ti-font-weight-bold);
+    color: var(--ti-gray-900);
+    margin-top: 1.5rem;
+    margin-bottom: 0.625rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid var(--ti-gray-200);
+    line-height: 1.35;
+}
+
+.tipowerup-installer .prose h3 {
+    font-size: 1.1rem;
+    font-weight: var(--ti-font-weight-semibold);
+    color: var(--ti-gray-900);
+    margin-top: 1.25rem;
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+}
+
+.tipowerup-installer .prose h4 {
+    font-size: 1rem;
+    font-weight: var(--ti-font-weight-semibold);
+    color: var(--ti-gray-900);
+    margin-top: 1.125rem;
+    margin-bottom: 0.375rem;
+    line-height: 1.4;
+}
+
+.tipowerup-installer .prose h5,
+.tipowerup-installer .prose h6 {
+    font-size: 0.9rem;
+    font-weight: var(--ti-font-weight-semibold);
+    color: var(--ti-gray-700);
+    margin-top: 1rem;
+    margin-bottom: 0.375rem;
+    line-height: 1.4;
+}
+
+.tipowerup-installer .prose h1:first-child,
+.tipowerup-installer .prose h2:first-child,
+.tipowerup-installer .prose h3:first-child,
+.tipowerup-installer .prose h4:first-child,
+.tipowerup-installer .prose h5:first-child,
+.tipowerup-installer .prose h6:first-child {
+    margin-top: 0;
+}
+
+/* --- Paragraphs --- */
+
+.tipowerup-installer .prose p {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+}
+
+.tipowerup-installer .prose p:last-child {
+    margin-bottom: 0;
+}
+
+/* --- Links --- */
+
+.tipowerup-installer .prose a {
+    color: var(--ti-primary);
+    text-decoration: none;
+    font-weight: var(--ti-font-weight-medium);
+    transition: var(--ti-transition-fast);
+}
+
+.tipowerup-installer .prose a:hover {
+    color: var(--ti-primary-hover);
+    text-decoration: underline;
+}
+
+/* --- Lists --- */
+
+.tipowerup-installer .prose ul,
+.tipowerup-installer .prose ol {
+    padding-left: 1.5rem;
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+}
+
+.tipowerup-installer .prose li {
+    margin-bottom: 0.25rem;
+    line-height: 1.6;
+}
+
+.tipowerup-installer .prose li:last-child {
+    margin-bottom: 0;
+}
+
+.tipowerup-installer .prose ul ul,
+.tipowerup-installer .prose ol ol,
+.tipowerup-installer .prose ul ol,
+.tipowerup-installer .prose ol ul {
+    margin-top: 0.25rem;
+    margin-bottom: 0;
+}
+
+/* --- Inline Code --- */
+
+.tipowerup-installer .prose code {
+    font-size: 0.8125rem;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    color: var(--ti-gray-800);
+    background-color: var(--ti-gray-100);
+    padding: 0.125rem 0.375rem;
+    border-radius: var(--ti-border-radius-sm);
+    border: 1px solid var(--ti-gray-200);
+    word-break: break-word;
+}
+
+/* --- Code Blocks --- */
+
+.tipowerup-installer .prose pre {
+    background-color: var(--ti-darker);
+    color: #e2e8f0;
+    padding: 0.875rem 1rem;
+    border-radius: var(--ti-border-radius);
+    overflow-x: auto;
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    border: 1px solid var(--ti-gray-700);
+}
+
+.tipowerup-installer .prose pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
+    border-radius: 0;
+    word-break: normal;
+}
+
+/* --- Blockquotes --- */
+
+.tipowerup-installer .prose blockquote {
+    margin: 0 0 0.75rem;
+    padding: 0.625rem 1rem;
+    border-left: 3px solid var(--ti-primary);
+    background-color: var(--ti-gray-50);
+    border-radius: 0 var(--ti-border-radius-sm) var(--ti-border-radius-sm) 0;
+    color: var(--ti-gray-700);
+}
+
+.tipowerup-installer .prose blockquote p:last-child {
+    margin-bottom: 0;
+}
+
+/* --- Tables --- */
+
+.tipowerup-installer .prose table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0.75rem;
+    font-size: 0.8125rem;
+}
+
+.tipowerup-installer .prose th,
+.tipowerup-installer .prose td {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--ti-gray-200);
+    text-align: left;
+}
+
+.tipowerup-installer .prose th {
+    font-weight: var(--ti-font-weight-semibold);
+    background-color: var(--ti-gray-50);
+    color: var(--ti-gray-700);
+    font-size: 0.8125rem;
+}
+
+.tipowerup-installer .prose tbody tr:hover {
+    background-color: var(--ti-gray-50);
+}
+
+/* --- Horizontal Rules --- */
+
+.tipowerup-installer .prose hr {
+    border: 0;
+    border-top: 1px solid var(--ti-gray-200);
+    margin: 1.25rem 0;
+    opacity: 1;
+}
+
+/* --- Images --- */
+
+.tipowerup-installer .prose img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--ti-border-radius);
+    margin-bottom: 0.75rem;
+}
+
+/* --- Strong & Emphasis --- */
+
+.tipowerup-installer .prose strong {
+    font-weight: var(--ti-font-weight-semibold);
+    color: var(--ti-gray-900);
+}
+
+.tipowerup-installer .prose em {
+    font-style: italic;
+}
+
+/* --- Definition Lists --- */
+
+.tipowerup-installer .prose dl {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+}
+
+.tipowerup-installer .prose dt {
+    font-weight: var(--ti-font-weight-semibold);
+    color: var(--ti-gray-900);
+    margin-bottom: 0.125rem;
+}
+
+.tipowerup-installer .prose dd {
+    margin-left: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+/* ============================================================================
+   Collapsible Section Headers
+   ========================================================================= */
+
+.tipowerup-installer__section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--ti-spacing-sm) var(--ti-spacing-md);
+    border-radius: var(--ti-border-radius);
+    transition: var(--ti-transition-fast);
+    user-select: none;
+}
+
+.tipowerup-installer__section-header:hover {
+    background-color: var(--ti-gray-50);
+}
+
+.tipowerup-installer__section-header .fa-chevron-right,
+.tipowerup-installer__section-header .fa-chevron-down {
+    transition: var(--ti-transition-fast);
+    color: var(--ti-gray-500);
+}
+
+/* ============================================================================
    Animations
    ========================================================================= */
 
 @keyframes fadeIn {
     from {
         opacity: 0;
-        transform: translateY(10px);
+        transform: translateY(6px);
     }
     to {
         opacity: 1;
@@ -1037,7 +1662,7 @@
 
 @media (max-width: 768px) {
     .tipowerup-installer {
-        padding: var(--ti-spacing-lg);
+        padding: var(--ti-spacing-md);
     }
 
     .tipowerup-installer__packages-grid {
@@ -1046,19 +1671,19 @@
 
     .tipowerup-installer__steps {
         flex-direction: column;
-        gap: var(--ti-spacing-lg);
+        gap: var(--ti-spacing-md);
     }
 
     .tipowerup-installer__step-connector {
         width: 2px;
-        height: 40px;
-        margin: var(--ti-spacing-sm) 0;
+        height: 30px;
+        margin: var(--ti-spacing-xs) 0;
     }
 
     .tipowerup-installer__step-label {
         position: static;
         transform: none;
-        margin-top: var(--ti-spacing-sm);
+        margin-top: var(--ti-spacing-xs);
     }
 
     .tipowerup-installer__settings-panel {
