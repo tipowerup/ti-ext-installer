@@ -31,7 +31,7 @@
                     </span>
                     <span wire:loading wire:target="checkUpdates">
                         <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                        {{ lang('tipowerup.installer::default.marketplace_detecting_purchase') }}
+                        {{ lang('tipowerup.installer::default.marketplace_checking_updates') }}
                     </span>
                 </button>
             @endif
@@ -181,7 +181,13 @@
                                                     @endif
                                                 </h6>
                                                 <div class="tipowerup-installer__package-version text-muted">
-                                                    {{ lang('tipowerup.installer::default.installed_version', ['version' => $package['version']]) }}
+                                                    @if($package['has_update'])
+                                                        <span class="text-success">
+                                                            {{ $package['version'] }} &rarr; {{ $package['latest_version'] }}
+                                                        </span>
+                                                    @else
+                                                        {{ lang('tipowerup.installer::default.installed_version', ['version' => $package['version']]) }}
+                                                    @endif
                                                 </div>
                                             </div>
                                         </div>
@@ -209,15 +215,6 @@
                                             </p>
                                         @endif
 
-                                        {{-- Update Available Badge --}}
-                                        @if($package['has_update'])
-                                            <div class="alert alert-info d-flex align-items-center p-2 mb-3" style="font-size: 0.875rem;">
-                                                <i class="fa fa-arrow-circle-up me-2"></i>
-                                                <strong>
-                                                    {{ lang('tipowerup.installer::default.installed_update_available', ['version' => $package['latest_version']]) }}
-                                                </strong>
-                                            </div>
-                                        @endif
 
                                         {{-- License Info --}}
                                         @if($package['expires_at'])
@@ -372,12 +369,12 @@
                                                         @endif
                                                     </strong>
                                                     <div class="text-muted small">
-                                                        {{ lang('tipowerup.installer::default.installed_version', ['version' => $package['version']]) }}
                                                         @if($package['has_update'])
-                                                            <span class="text-info ms-1">
-                                                                <i class="fa fa-arrow-circle-up"></i>
-                                                                {{ lang('tipowerup.installer::default.installed_update_available', ['version' => $package['latest_version']]) }}
+                                                            <span class="text-success fw-medium">
+                                                                {{ $package['version'] }} &rarr; {{ $package['latest_version'] }}
                                                             </span>
+                                                        @else
+                                                            {{ lang('tipowerup.installer::default.installed_version', ['version' => $package['version']]) }}
                                                         @endif
                                                     </div>
                                                 </div>

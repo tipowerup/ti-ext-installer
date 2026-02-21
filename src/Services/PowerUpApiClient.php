@@ -21,6 +21,10 @@ class PowerUpApiClient
 
     private const int MAX_RETRIES = 3;
 
+    private int $timeout = self::TIMEOUT_SECONDS;
+
+    private int $maxRetries = self::MAX_RETRIES;
+
     private string $apiKey;
 
     public function __construct()
@@ -31,6 +35,20 @@ class PowerUpApiClient
     public function setApiKey(string $key): void
     {
         $this->apiKey = $key;
+    }
+
+    public function setTimeout(int $seconds): static
+    {
+        $this->timeout = $seconds;
+
+        return $this;
+    }
+
+    public function setMaxRetries(int $retries): static
+    {
+        $this->maxRetries = $retries;
+
+        return $this;
     }
 
     public function verifyKey(): array
@@ -109,7 +127,7 @@ class PowerUpApiClient
         $attempt = 0;
         $lastException = null;
 
-        while ($attempt < self::MAX_RETRIES) {
+        while ($attempt < $this->maxRetries) {
             $attempt++;
 
             try {
@@ -120,7 +138,7 @@ class PowerUpApiClient
                 ]);
 
                 $request = Http::baseUrl(self::BASE_URL)
-                    ->timeout(self::TIMEOUT_SECONDS)
+                    ->timeout($this->timeout)
                     ->acceptJson()
                     ->withHeaders($this->buildHeaders());
 
@@ -171,7 +189,7 @@ class PowerUpApiClient
                     'error' => $e->getMessage(),
                 ]);
 
-                if ($attempt < self::MAX_RETRIES) {
+                if ($attempt < $this->maxRetries) {
                     // Exponential backoff: 1s, 2s, 4s
                     sleep(2 ** ($attempt - 1));
 
@@ -191,7 +209,7 @@ class PowerUpApiClient
 
         // If we've exhausted all retries
         throw new RuntimeException(
-            'Failed to connect to PowerUp API after '.self::MAX_RETRIES.' attempts: '.
+            'Failed to connect to PowerUp API after '.$this->maxRetries.' attempts: '.
             ($lastException ? $lastException->getMessage() : 'Unknown error'),
             0,
             $lastException

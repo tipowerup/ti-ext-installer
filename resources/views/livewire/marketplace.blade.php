@@ -205,7 +205,7 @@
                                 </div>
                             @endif
 
-                            <div class="tipowerup-installer__package-info">
+                            <div class="tipowerup-installer__package-info flex-grow-1">
                                 <div class="tipowerup-installer__package-name" title="{{ $package['name'] }}">
                                     {{ $package['name'] }}
                                 </div>
@@ -218,6 +218,16 @@
                                     @endif
                                 </div>
                             </div>
+
+                            @if(($package['purchased'] ?? false) && !($package['is_installed'] ?? false))
+                                <input
+                                    type="checkbox"
+                                    class="form-check-input mt-0 flex-shrink-0"
+                                    id="select-{{ $package['code'] }}"
+                                    wire:click="toggleBatchSelect('{{ $package['code'] }}')"
+                                    {{ in_array($package['code'], $selectedForBatch) ? 'checked' : '' }}
+                                >
+                            @endif
                         </div>
 
                         {{-- Description --}}
@@ -271,16 +281,6 @@
                                         <i class="fa fa-check me-1"></i>Installed
                                     </button>
                                 @elseif($package['purchased'] ?? false)
-                                    {{-- Batch select checkbox --}}
-                                    <div class="form-check mb-0 d-flex align-items-center me-1">
-                                        <input
-                                            type="checkbox"
-                                            class="form-check-input mt-0"
-                                            id="select-{{ $package['code'] }}"
-                                            wire:click="toggleBatchSelect('{{ $package['code'] }}')"
-                                            {{ in_array($package['code'], $selectedForBatch) ? 'checked' : '' }}
-                                        >
-                                    </div>
                                     <button
                                         wire:click="installPackage('{{ $package['code'] }}')"
                                         class="tipowerup-installer__btn-install btn btn-sm"
@@ -356,7 +356,18 @@
                             </td>
                             {{-- Name & Description --}}
                             <td>
-                                <div class="fw-semibold" style="font-size: 0.875rem;">{{ $package['name'] }}</div>
+                                <div class="d-flex align-items-center gap-2" style="font-size: 0.875rem;">
+                                    <span class="fw-semibold">{{ $package['name'] }}</span>
+                                    @if(($package['purchased'] ?? false) && !($package['is_installed'] ?? false))
+                                        <input
+                                            type="checkbox"
+                                            class="form-check-input mt-0 flex-shrink-0"
+                                            id="list-select-{{ $package['code'] }}"
+                                            wire:click="toggleBatchSelect('{{ $package['code'] }}')"
+                                            {{ in_array($package['code'], $selectedForBatch) ? 'checked' : '' }}
+                                        >
+                                    @endif
+                                </div>
                                 @if(isset($package['description']))
                                     <div class="text-muted" style="font-size: 0.75rem; line-height: 1.3;">
                                         {{ \Illuminate\Support\Str::limit($package['description'], 70) }}
@@ -398,18 +409,6 @@
                             {{-- Actions --}}
                             <td class="text-end">
                                 <div class="d-flex justify-content-end gap-1 align-items-center">
-                                    @if($package['purchased'] ?? false)
-                                        <div class="form-check mb-0 me-1">
-                                            <input
-                                                type="checkbox"
-                                                class="form-check-input"
-                                                id="list-select-{{ $package['code'] }}"
-                                                wire:click="toggleBatchSelect('{{ $package['code'] }}')"
-                                                {{ in_array($package['code'], $selectedForBatch) ? 'checked' : '' }}
-                                            >
-                                        </div>
-                                    @endif
-
                                     <button
                                         wire:click="viewDetail('{{ $package['code'] }}')"
                                         class="btn btn-sm btn-outline-secondary"

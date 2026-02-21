@@ -75,6 +75,7 @@ return [
     'marketplace_buy' => 'Buy',
     'marketplace_purchased' => 'Purchased',
     'marketplace_free' => 'Free',
+    'marketplace_checking_updates' => 'Checking for updates...',
     'marketplace_refresh' => 'Refresh',
     'marketplace_loading' => 'Loading PowerUps...',
     'marketplace_empty_title' => 'No PowerUps found',
@@ -194,6 +195,11 @@ return [
     'link_support' => 'Contact Support',
     'link_discord' => 'Discord Community',
     'link_reddit' => 'Reddit Community',
+
+    // Background update notifications
+    'notify_update_found_title' => 'PowerUp Updates Available',
+    'notify_updates_found' => '%d PowerUp updates are available.',
+    'notify_update_found' => '1 PowerUp update is available.',
 
     // Permissions
     'permissions_manage' => 'Install, update, and manage TI PowerUp extensions and themes',

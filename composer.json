@@ -10,7 +10,7 @@
         }
     ],
     "require": {
-        "php": "^8.2 || ^8.3",
+        "php": "^8.2",
         "livewire/livewire": "^3.0",
         "symfony/process": "^7.0",
         "tastyigniter/core": "^v4.0"

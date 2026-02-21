@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace Tipowerup\Installer;
 
 use Facades\Igniter\System\Helpers\SystemHelper;
+use Igniter\Admin\Facades\Template;
+use Igniter\Flame\Support\Facades\Igniter;
 use Igniter\Main\Classes\ThemeManager;
 use Igniter\System\Classes\BaseExtension;
 use Igniter\System\Classes\ExtensionManager;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Route;
 use Livewire\Livewire;
 use Override;
 use Throwable;
@@ -20,6 +23,7 @@ use Tipowerup\Installer\Livewire\Marketplace;
 use Tipowerup\Installer\Livewire\Onboarding;
 use Tipowerup\Installer\Livewire\PackageDetail;
 use Tipowerup\Installer\Livewire\SettingsPanel;
+use Tipowerup\Installer\Services\BackgroundUpdateChecker;
 
 class Extension extends BaseExtension
 {
@@ -60,6 +64,8 @@ class Extension extends BaseExtension
     {
         $this->registerLivewireComponents();
         $this->registerStoragePackages();
+        $this->registerAutoUpdateCheck();
+        $this->defineRoutes();
     }
 
     /**
@@ -104,6 +110,43 @@ class Extension extends BaseExtension
     public function registerSettings(): array
     {
         return [];
+    }
+
+    /**
+     * Register the background auto-update check script on admin pages.
+     */
+    protected function registerAutoUpdateCheck(): void
+    {
+        if (app()->runningInConsole() || !Igniter::runningInAdmin()) {
+            return;
+        }
+
+        Template::registerHook('endScripts', function (): string {
+            $apiKey = params('tipowerup_api_key', '');
+            if ($apiKey === '' || $apiKey === '0') {
+                return '';
+            }
+
+            return view('tipowerup.installer::_partials.auto_update_check')->render();
+        });
+    }
+
+    /**
+     * Register the background update check route.
+     */
+    protected function defineRoutes(): void
+    {
+        if (app()->routesAreCached()) {
+            return;
+        }
+
+        Route::middleware(config('igniter-routes.adminMiddleware', ['web']))
+            ->domain(config('igniter-routes.adminDomain'))
+            ->prefix(Igniter::adminUri())
+            ->group(function (): void {
+                Route::post('tipowerup/installer/check-updates-bg', fn () => resolve(BackgroundUpdateChecker::class)->handle())
+                    ->name('tipowerup.installer.check-updates-bg');
+            });
     }
 
     /**

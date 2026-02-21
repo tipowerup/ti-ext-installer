@@ -93,19 +93,17 @@ class InstalledPackages extends Component
 
                 return [
                     'code' => $pkg['code'],
+                    'extension_code' => $pkg['extension_code'] ?? null,
+                    'theme_code' => $pkg['theme_code'] ?? null,
                     'name' => $remote['name'] ?? $license?->package_name ?? $pkg['name'],
                     'description' => $remote['description'] ?? $pkg['description'] ?? '',
                     'version' => $this->normalizeVersion($version),
-                    'latest_version' => $this->normalizeVersion($remote['latest_version'] ?? $version),
+                    'latest_version' => $this->normalizeVersion($remote['version'] ?? $version),
                     'type' => $pkg['type'],
                     'install_method' => $license?->install_method ?? 'unknown',
                     'is_active' => $pkg['is_active'],
                     'expires_at' => $license?->expires_at?->format('M j, Y'),
-                    'has_update' => version_compare(
-                        $remote['latest_version'] ?? $version,
-                        $version,
-                        '>'
-                    ),
+                    'has_update' => $this->isNewerVersion($remote['version'] ?? $version, $version),
                     'icon' => $remote['icon'] ?? $pkg['icon'] ?? $this->getDefaultIcon($pkg['type']),
                     'is_owned' => in_array($pkg['code'], $ownedCodes, true),
                     'settings_url' => $pkg['settings_url'] ?? null,
@@ -157,6 +155,7 @@ class InstalledPackages extends Component
     private function scanInstalledPowerUps(): array
     {
         $packages = [];
+        $composerVersions = $this->getComposerInstalledVersions();
 
         // Scan extensions (codes like "tipowerup.darkmode")
         $extensionManager = resolve(ExtensionManager::class);
@@ -173,6 +172,12 @@ class InstalledPackages extends Component
             $meta = $extension->extensionMeta();
             $extensionRoot = dirname(dirname(File::fromClass(get_class($extension))));
 
+            // Read composer package name for API matching
+            $composerPath = $extensionRoot.'/composer.json';
+            $contents = file_get_contents($composerPath);
+            $composerData = json_decode($contents, true);
+            $composerName = $composerData['name'];
+
             $settingsUrl = null;
             $settings = $extension->registerSettings();
             if (!empty($settings)) {
@@ -181,11 +186,12 @@ class InstalledPackages extends Component
             }
 
             $packages[] = [
-                'code' => $code,
+                'code' => $composerName,
+                'extension_code' => $code,
                 'name' => $meta['name'] ?? $code,
                 'description' => $meta['description'] ?? '',
                 'type' => 'extension',
-                'version' => $this->normalizeVersion($meta['version'] ?? '0.0.0'),
+                'version' => $this->normalizeVersion($composerVersions[$composerName] ?? $meta['version'] ?? '0.0.0'),
                 'icon' => $this->normalizeIcon($meta['icon'] ?? null, $extensionRoot, 'extension'),
                 'is_active' => !$extensionManager->isDisabled($code),
                 'settings_url' => $settingsUrl,
@@ -193,7 +199,6 @@ class InstalledPackages extends Component
         }
 
         // Scan themes (codes like "tipowerup-orange-tw")
-        $composerVersions = $this->getComposerInstalledVersions();
         $themeManager = resolve(ThemeManager::class);
         foreach ($themeManager->listThemes() as $code => $theme) {
             if (!str_starts_with($code, 'tipowerup-')) {
@@ -206,13 +211,12 @@ class InstalledPackages extends Component
 
             if ($themePath !== null) {
                 $themeComposerPath = $themePath.'/composer.json';
-                if (file_exists($themeComposerPath)) {
-                    $contents = file_get_contents($themeComposerPath);
-                    $themeComposer = $contents !== false ? (json_decode($contents, true) ?: []) : [];
-                    $composerName = $themeComposer['name'] ?? null;
-                    if ($composerName !== null && isset($composerVersions[$composerName])) {
-                        $themeVersion = $composerVersions[$composerName];
-                    }
+                $contents = file_get_contents($themeComposerPath);
+                $themeComposer = json_decode($contents, true);
+                $composerName = $themeComposer['name'];
+
+                if (isset($composerVersions[$composerName])) {
+                    $themeVersion = $composerVersions[$composerName];
                 }
 
                 $themeIcon = $this->normalizeIcon($theme->icon ?? null, $themePath, 'theme');
@@ -230,7 +234,8 @@ class InstalledPackages extends Component
             }
 
             $packages[] = [
-                'code' => $code,
+                'code' => $composerName,
+                'theme_code' => $code,
                 'name' => $theme->label ?? $theme->name ?? $code,
                 'description' => $theme->description ?? '',
                 'type' => 'theme',
@@ -401,8 +406,9 @@ class InstalledPackages extends Component
     {
         try {
             $name = $this->resolvePackageName($code);
+            $extensionCode = $this->resolveExtensionCode($code);
             $extensionManager = resolve(ExtensionManager::class);
-            $extensionManager->updateInstalledExtensions($code, true);
+            $extensionManager->updateInstalledExtensions($extensionCode, true);
             $this->loadPackages();
 
             $this->showToast('success', lang('tipowerup.installer::default.success_extension_enabled', [
@@ -417,8 +423,9 @@ class InstalledPackages extends Component
     {
         try {
             $name = $this->resolvePackageName($code);
+            $extensionCode = $this->resolveExtensionCode($code);
             $extensionManager = resolve(ExtensionManager::class);
-            $extensionManager->updateInstalledExtensions($code, false);
+            $extensionManager->updateInstalledExtensions($extensionCode, false);
             $this->loadPackages();
 
             $this->showToast('success', lang('tipowerup.installer::default.success_extension_disabled', [
@@ -433,7 +440,8 @@ class InstalledPackages extends Component
     {
         try {
             $name = $this->resolvePackageName($code);
-            Theme::activateTheme($code);
+            $themeCode = $this->resolveThemeCode($code);
+            Theme::activateTheme($themeCode);
             Theme::clearDefaultModel();
             $this->loadPackages();
 
@@ -600,6 +608,19 @@ class InstalledPackages extends Component
     }
 
     /**
+     * Check if the remote version is newer than the local version.
+     * Only compares valid semver versions — non-semver (dev-main, dev-master, etc.) always returns false.
+     */
+    private function isNewerVersion(string $remote, string $local): bool
+    {
+        if (!preg_match('/^\d+\.\d+/', $remote) || !preg_match('/^\d+\.\d+/', $local)) {
+            return false;
+        }
+
+        return version_compare($remote, $local, '>');
+    }
+
+    /**
      * Strip 'v' prefix from semver versions (v1.2.3 -> 1.2.3), keep dev-* as-is.
      */
     private function normalizeVersion(string $version): string
@@ -619,6 +640,26 @@ class InstalledPackages extends Component
         $package = collect($this->installedPackages)->firstWhere('code', $code);
 
         return $package['name'] ?? $code;
+    }
+
+    /**
+     * Resolve the TI extension code (e.g. "tipowerup.darkmode") from a composer package name.
+     */
+    private function resolveExtensionCode(string $code): string
+    {
+        $package = collect($this->installedPackages)->firstWhere('code', $code);
+
+        return $package['extension_code'] ?? $code;
+    }
+
+    /**
+     * Resolve the TI theme code (e.g. "tipowerup-orange-tw") from a composer package name.
+     */
+    private function resolveThemeCode(string $code): string
+    {
+        $package = collect($this->installedPackages)->firstWhere('code', $code);
+
+        return $package['theme_code'] ?? $code;
     }
 
     /**

@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Tipowerup\Installer\Livewire;
 
 use Exception;
+use Igniter\Flame\Support\Facades\File;
+use Igniter\Main\Classes\ThemeManager;
+use Igniter\System\Classes\ExtensionManager;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Client\ConnectionException;
 use Livewire\Component;
@@ -59,7 +62,10 @@ class Marketplace extends Component
 
             $response = $apiClient->getMarketplace($filters);
 
-            $this->packages = $response['data'] ?? [];
+            $installedCodes = $this->getInstalledPackageCodes();
+            $this->packages = array_values(
+                array_filter($response['data'] ?? [], fn (array $pkg): bool => !in_array($pkg['code'] ?? '', $installedCodes, true))
+            );
             $pagination = $response['pagination'] ?? [];
             $this->totalPages = $pagination['total_pages'] ?? 1;
             $this->currentPage = $pagination['current_page'] ?? 1;
@@ -160,6 +166,52 @@ class Marketplace extends Component
         }
 
         return $packageCode;
+    }
+
+    /**
+     * Get composer package names of all installed tipowerup packages.
+     *
+     * @return array<int, string>
+     */
+    private function getInstalledPackageCodes(): array
+    {
+        $codes = [];
+
+        $extensionManager = resolve(ExtensionManager::class);
+        foreach ($extensionManager->listExtensions() as $code) {
+            if (!str_starts_with($code, 'tipowerup.') || $code === 'tipowerup.installer') {
+                continue;
+            }
+
+            $extension = $extensionManager->findExtension($code);
+            if ($extension === null) {
+                continue;
+            }
+
+            $extensionRoot = dirname(dirname(File::fromClass(get_class($extension))));
+            $composerPath = $extensionRoot.'/composer.json';
+            $contents = file_get_contents($composerPath);
+            $composerData = json_decode($contents, true);
+            $codes[] = $composerData['name'];
+        }
+
+        $themeManager = resolve(ThemeManager::class);
+        foreach ($themeManager->listThemes() as $code => $theme) {
+            if (!str_starts_with($code, 'tipowerup-')) {
+                continue;
+            }
+
+            $themePath = $themeManager->findPath($code);
+            if ($themePath === null) {
+                continue;
+            }
+
+            $contents = file_get_contents($themePath.'/composer.json');
+            $composerData = json_decode($contents, true);
+            $codes[] = $composerData['name'];
+        }
+
+        return $codes;
     }
 
     public function render(): View
