@@ -23,6 +23,10 @@ class InstallerMain extends Component
 
     public bool $showInstallProgress = false;
 
+    public ?string $installPackageCode = null;
+
+    public string $installPackageName = '';
+
     /**
      * @var array<int, array{code: string, name: string, installed: bool, manage_url: string}>
      */
@@ -83,6 +87,12 @@ class InstallerMain extends Component
         $this->checkCoreExtensions();
     }
 
+    #[On('open-settings')]
+    public function onOpenSettings(): void
+    {
+        $this->openSettings();
+    }
+
     #[On('settings-closed')]
     public function onSettingsClosed(): void
     {
@@ -95,9 +105,11 @@ class InstallerMain extends Component
         $this->closePackageDetail();
     }
 
-    #[On('install-started')]
-    public function onInstallStarted(): void
+    #[On('begin-install')]
+    public function onBeginInstall($packageCode, $packageName = ''): void
     {
+        $this->installPackageCode = $packageCode;
+        $this->installPackageName = $packageName;
         $this->showInstallProgress = true;
     }
 
@@ -105,6 +117,8 @@ class InstallerMain extends Component
     public function onInstallCompleted(): void
     {
         $this->showInstallProgress = false;
+        $this->installPackageCode = null;
+        $this->installPackageName = '';
         $this->checkCoreExtensions();
     }
 

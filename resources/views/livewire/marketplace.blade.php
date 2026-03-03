@@ -5,13 +5,17 @@
             <i class="fa fa-exclamation-circle me-2 mt-1 flex-shrink-0"></i>
             <div class="flex-grow-1">
                 @if($isKeyError)
-                    <strong>{{ lang('tipowerup.installer::default.error_powerup_key_invalid_alert') }}</strong>
-                    <p class="mb-0 mt-1 small">{{ $errorMessage }}</p>
+                    {{ lang('tipowerup.installer::default.error_powerup_key_invalid_alert') }}
+                    <a href="#" wire:click.prevent="$dispatch('open-settings')" class="alert-link">
+                        {{ lang('tipowerup.installer::default.settings_title') }}
+                    </a>
                 @else
                     {{ $errorMessage }}
                 @endif
             </div>
-            <button wire:click="$set('errorMessage', null)" type="button" class="btn-close btn-close-sm flex-shrink-0 ms-2"></button>
+            @if(!$isKeyError)
+                <button wire:click="$set('errorMessage', null)" type="button" class="btn-close btn-close-sm flex-shrink-0 ms-2"></button>
+            @endif
         </div>
     @endif
 
@@ -66,12 +70,6 @@
                 </button>
             </div>
 
-            @if(count($selectedForBatch) > 0)
-                <button wire:click="batchInstall" class="btn btn-success btn-sm">
-                    <i class="fa fa-download me-1"></i>
-                    {{ lang('tipowerup.installer::default.action_batch_install') }} ({{ count($selectedForBatch) }})
-                </button>
-            @endif
         </div>
 
         {{-- Refresh + View Mode Toggle --}}
@@ -219,15 +217,6 @@
                                 </div>
                             </div>
 
-                            @if(($package['purchased'] ?? false) && !($package['is_installed'] ?? false))
-                                <input
-                                    type="checkbox"
-                                    class="form-check-input mt-0 flex-shrink-0"
-                                    id="select-{{ $package['code'] }}"
-                                    wire:click="toggleBatchSelect('{{ $package['code'] }}')"
-                                    {{ in_array($package['code'], $selectedForBatch) ? 'checked' : '' }}
-                                >
-                            @endif
                         </div>
 
                         {{-- Description --}}
@@ -276,29 +265,31 @@
                                     <i class="fa fa-eye"></i>
                                 </button>
 
-                                @if($package['is_installed'] ?? false)
-                                    <button class="btn btn-sm btn-success" disabled>
-                                        <i class="fa fa-check me-1"></i>Installed
-                                    </button>
-                                @elseif($package['purchased'] ?? false)
-                                    <button
-                                        wire:click="installPackage('{{ $package['code'] }}')"
-                                        class="tipowerup-installer__btn-install btn btn-sm"
-                                    >
-                                        <i class="fa fa-download me-1"></i>
-                                        {{ lang('tipowerup.installer::default.marketplace_install') }}
-                                    </button>
-                                @else
+                                @if(isset($package['price']) && $package['price'] > 0)
                                     <a
                                         href="{{ $package['url'] ?? '#' }}"
                                         target="_blank"
                                         rel="noopener noreferrer"
-
                                         class="tipowerup-installer__btn-buy btn btn-sm"
                                     >
                                         <i class="fa fa-shopping-cart me-1"></i>
                                         {{ lang('tipowerup.installer::default.marketplace_buy') }}
                                     </a>
+                                @else
+                                    <button
+                                        wire:click="acquireFreeProduct('{{ $package['code'] }}', '{{ addslashes($package['name'] ?? '') }}')"
+                                        wire:loading.attr="disabled"
+                                        wire:target="acquireFreeProduct"
+                                        class="btn btn-sm btn-success"
+                                    >
+                                        <span wire:loading.remove wire:target="acquireFreeProduct">
+                                            <i class="fa fa-plus me-1"></i>
+                                            {{ lang('tipowerup.installer::default.marketplace_get') }}
+                                        </span>
+                                        <span wire:loading wire:target="acquireFreeProduct">
+                                            <i class="fa fa-spinner fa-spin me-1"></i>
+                                        </span>
+                                    </button>
                                 @endif
                             </div>
                         </div>
@@ -358,15 +349,6 @@
                             <td>
                                 <div class="d-flex align-items-center gap-2" style="font-size: 0.875rem;">
                                     <span class="fw-semibold">{{ $package['name'] }}</span>
-                                    @if(($package['purchased'] ?? false) && !($package['is_installed'] ?? false))
-                                        <input
-                                            type="checkbox"
-                                            class="form-check-input mt-0 flex-shrink-0"
-                                            id="list-select-{{ $package['code'] }}"
-                                            wire:click="toggleBatchSelect('{{ $package['code'] }}')"
-                                            {{ in_array($package['code'], $selectedForBatch) ? 'checked' : '' }}
-                                        >
-                                    @endif
                                 </div>
                                 @if(isset($package['description']))
                                     <div class="text-muted" style="font-size: 0.75rem; line-height: 1.3;">
@@ -417,29 +399,31 @@
                                         <i class="fa fa-eye"></i>
                                     </button>
 
-                                    @if($package['is_installed'] ?? false)
-                                        <button class="btn btn-sm btn-success" disabled>
-                                            <i class="fa fa-check me-1"></i>Installed
-                                        </button>
-                                    @elseif($package['purchased'] ?? false)
-                                        <button
-                                            wire:click="installPackage('{{ $package['code'] }}')"
-                                            class="tipowerup-installer__btn-install btn btn-sm"
-                                        >
-                                            <i class="fa fa-download me-1"></i>
-                                            {{ lang('tipowerup.installer::default.marketplace_install') }}
-                                        </button>
-                                    @else
+                                    @if(isset($package['price']) && $package['price'] > 0)
                                         <a
                                             href="{{ $package['url'] ?? '#' }}"
                                             target="_blank"
                                             rel="noopener noreferrer"
-    
                                             class="tipowerup-installer__btn-buy btn btn-sm"
                                         >
                                             <i class="fa fa-shopping-cart me-1"></i>
                                             {{ lang('tipowerup.installer::default.marketplace_buy') }}
                                         </a>
+                                    @else
+                                        <button
+                                            wire:click="acquireFreeProduct('{{ $package['code'] }}', '{{ addslashes($package['name'] ?? '') }}')"
+                                            wire:loading.attr="disabled"
+                                            wire:target="acquireFreeProduct"
+                                            class="btn btn-sm btn-success"
+                                        >
+                                            <span wire:loading.remove wire:target="acquireFreeProduct">
+                                                <i class="fa fa-plus me-1"></i>
+                                                {{ lang('tipowerup.installer::default.marketplace_get') }}
+                                            </span>
+                                            <span wire:loading wire:target="acquireFreeProduct">
+                                                <i class="fa fa-spinner fa-spin me-1"></i>
+                                            </span>
+                                        </button>
                                     @endif
                                 </div>
                             </td>

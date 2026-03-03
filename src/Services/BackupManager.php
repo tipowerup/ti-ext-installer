@@ -218,11 +218,16 @@ class BackupManager
     }
 
     /**
-     * Validate package code format.
+     * @return array{0: string, 1: string}
      */
+    private function splitPackageCode(string $packageCode): array
+    {
+        return explode('/', $packageCode, 2);
+    }
+
     private function validatePackageCode(string $packageCode): void
     {
-        if (!preg_match('/^[a-z][a-z0-9]*\.[a-z][a-z0-9]*$/i', $packageCode)) {
+        if (!preg_match('/^[a-z][a-z0-9-]*\/[a-z][a-z0-9-]*$/i', $packageCode)) {
             throw new InvalidArgumentException(
                 sprintf("Invalid package code format: '%s'", $packageCode)
             );
@@ -234,7 +239,7 @@ class BackupManager
      */
     private function getBackupPath(string $packageCode): string
     {
-        return storage_path(self::BACKUP_BASE_PATH.'/'.$packageCode);
+        return storage_path(self::BACKUP_BASE_PATH.'/'.str_replace('/', '.', $packageCode));
     }
 
     /**
@@ -242,8 +247,7 @@ class BackupManager
      */
     private function findPackagePath(string $packageCode): ?string
     {
-        $vendor = str_contains($packageCode, '.') ? explode('.', $packageCode)[0] : 'tipowerup';
-        $name = str_contains($packageCode, '.') ? explode('.', $packageCode)[1] : $packageCode;
+        [$vendor, $name] = $this->splitPackageCode($packageCode);
 
         // Check extensions directory first
         $extensionsPath = base_path(sprintf('extensions/%s/%s', $vendor, $name));
@@ -265,8 +269,7 @@ class BackupManager
      */
     private function determineTargetPath(string $packageCode): string
     {
-        $vendor = str_contains($packageCode, '.') ? explode('.', $packageCode)[0] : 'tipowerup';
-        $name = str_contains($packageCode, '.') ? explode('.', $packageCode)[1] : $packageCode;
+        [$vendor, $name] = $this->splitPackageCode($packageCode);
 
         // Default to extensions directory for tipowerup packages
         if ($vendor === 'tipowerup') {

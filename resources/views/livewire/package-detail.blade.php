@@ -89,7 +89,7 @@
                     <span class="tipowerup-installer__badge tipowerup-installer__badge--{{ $packageData['type'] === 'theme' ? 'theme' : ($packageData['type'] === 'bundle' ? 'bundle' : 'extension') }}">
                         {{ ucfirst($packageData['type']) }}
                     </span>
-                    @if(!($packageData['local'] ?? false))
+                    @if(!($packageData['local'] ?? false) && !($packageData['purchased'] ?? false))
                         @if(($packageData['price'] ?? 0) > 0)
                             <span class="fw-semibold" style="color: var(--ti-primary, #3B82F6);">
                                 {{ $packageData['price_formatted'] ?? ('$' . number_format($packageData['price'], 2)) }}

@@ -29,6 +29,10 @@ return [
     'health_vendor_writable' => 'Vendor Directory Writable',
     'health_public_vendor_writable' => 'Public Vendor Directory Writable',
     'health_api_connectivity' => 'TI PowerUp API Connectivity',
+    'health_composer_writable' => 'Composer Files Writable',
+    'health_composer_writable_passed' => 'All Composer-required paths are writable',
+    'health_composer_writable_failed' => 'One or more Composer-required paths are not writable',
+    'health_composer_writable_fix' => 'The following paths must be writable for Composer installs: :paths. Run: chmod 664 composer.json composer.lock && chmod -R 755 vendor',
     'health_memory_limit' => 'Memory Limit (:limit MB)',
     'health_passed' => 'Passed',
     'health_failed' => 'Failed',
@@ -75,6 +79,7 @@ return [
     'marketplace_buy' => 'Buy',
     'marketplace_purchased' => 'Purchased',
     'marketplace_free' => 'Free',
+    'marketplace_get' => 'Get',
     'marketplace_checking_updates' => 'Checking for updates...',
     'marketplace_refresh' => 'Refresh',
     'marketplace_loading' => 'Loading PowerUps...',
@@ -116,6 +121,24 @@ return [
     'progress_cancel' => 'Cancel',
     'progress_close' => 'Close',
     'progress_retry' => 'Retry',
+    'progress_stage_cancelled' => 'Installation Cancelled',
+    'confirm_cancel' => 'Are you sure you want to cancel this installation?',
+
+    // Progress error messages (user-friendly)
+    'progress_error_license_invalid' => 'Your license could not be verified. Check your PowerUp key in Settings.',
+    'progress_error_compatibility_failed' => 'Not compatible with your current system.',
+    'progress_error_checksum_mismatch' => 'Downloaded file appears corrupted. Please try again.',
+    'progress_error_download_failed' => 'Could not download the PowerUp. Check your internet connection.',
+    'progress_error_extraction_failed' => 'Failed to extract files. Check available disk space.',
+    'progress_error_migration_failed' => 'Database migration failed. Previous version has been restored.',
+    'progress_error_composer_failed' => 'Composer installation failed. Try switching to Direct Extraction in Settings.',
+    'progress_error_registration_failed' => 'Installed but could not register with TastyIgniter. Try again.',
+    'progress_error_connection_failed' => 'Could not connect to the TI PowerUp server. Check your internet connection.',
+    'progress_error_invalid_package' => 'Invalid package code. Please contact support.',
+    'progress_error_backup_failed' => 'Failed to create a backup. Try again or contact support.',
+    'progress_error_cancelled' => 'Installation was cancelled.',
+    'progress_error_unknown' => 'An unexpected error occurred. Please try again or contact support.',
+    'progress_error_help_logs' => 'For technical details, check your Laravel log at storage/logs/laravel.log',
 
     // Actions
     'action_install' => 'Install',
@@ -165,8 +188,9 @@ return [
     'error_restore_failed' => 'Failed to restore from backup.',
     'error_connection_failed' => 'Could not connect to the TI PowerUp server. Please check your internet connection.',
     'error_generic' => 'Something went wrong. Please try again.',
-    'error_powerup_key_invalid_alert' => 'Your PowerUp key may be invalid or expired. Please check your key in Settings.',
+    'error_powerup_key_invalid_alert' => 'Your PowerUp key may be invalid or incorrect. Please check your key in',
     'error_invalid_install_method' => 'Invalid installation method selected.',
+    'error_composer_not_writable' => 'Cannot use Composer install method. The following paths are not writable: :paths. Please fix permissions and try again.',
     'error_powerup_key_not_verified' => 'Please verify your PowerUp key first.',
 
     // Actions (additional)
@@ -188,6 +212,7 @@ return [
     'success_theme_activated' => ':package has been activated as the default theme.',
     'success_restored' => ':package has been restored from backup.',
     'success_api_key_verified' => 'PowerUp key verified successfully.',
+    'success_free_acquired' => ':package has been added to your account.',
     'success_composer_phar_downloaded' => 'Composer downloaded successfully.',
     'error_composer_phar_download_failed' => 'Failed to download Composer. Please try again later.',
 

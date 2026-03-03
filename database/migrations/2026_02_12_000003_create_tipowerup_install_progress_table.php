@@ -21,6 +21,8 @@ return new class extends Migration
             $table->unsignedTinyInteger('progress_percent')->default(0);
             $table->string('message', 255)->nullable();
             $table->text('error')->nullable();
+            $table->string('error_code', 50)->nullable();
+            $table->string('failed_stage', 50)->nullable();
             $table->timestamps();
 
             $table->index('batch_id');

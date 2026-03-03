@@ -4,19 +4,20 @@ declare(strict_types=1);
 
 namespace Tipowerup\Installer\Livewire;
 
-use Exception;
 use Igniter\Flame\Support\Facades\File;
 use Igniter\Main\Classes\ThemeManager;
 use Igniter\System\Classes\ExtensionManager;
 use Illuminate\Contracts\View\View;
-use Illuminate\Http\Client\ConnectionException;
+use Livewire\Attributes\On;
 use Livewire\Component;
-use RuntimeException;
-use Tipowerup\Installer\Exceptions\LicenseValidationException;
+use Throwable;
+use Tipowerup\Installer\Livewire\Concerns\HandlesApiErrors;
 use Tipowerup\Installer\Services\PowerUpApiClient;
 
 class Marketplace extends Component
 {
+    use HandlesApiErrors;
+
     public array $packages = [];
 
     public string $searchQuery = '';
@@ -31,15 +32,15 @@ class Marketplace extends Component
 
     public bool $isLoading = true;
 
-    public ?string $errorMessage = null;
-
-    public bool $isKeyError = false;
-
     public string $viewMode = 'grid';
 
-    public array $selectedForBatch = [];
-
     public function mount(): void
+    {
+        $this->loadMarketplace();
+    }
+
+    #[On('api-key-changed')]
+    public function onApiKeyChanged(): void
     {
         $this->loadMarketplace();
     }
@@ -47,8 +48,7 @@ class Marketplace extends Component
     public function loadMarketplace(): void
     {
         $this->isLoading = true;
-        $this->errorMessage = null;
-        $this->isKeyError = false;
+        $this->resetApiError();
 
         try {
             $apiClient = resolve(PowerUpApiClient::class);
@@ -64,23 +64,13 @@ class Marketplace extends Component
 
             $installedCodes = $this->getInstalledPackageCodes();
             $this->packages = array_values(
-                array_filter($response['data'] ?? [], fn (array $pkg): bool => !in_array($pkg['code'] ?? '', $installedCodes, true))
+                array_filter($response['data'] ?? [], fn (array $pkg): bool => !in_array($pkg['code'] ?? '', $installedCodes, true) && !($pkg['purchased'] ?? false))
             );
             $pagination = $response['pagination'] ?? [];
             $this->totalPages = $pagination['total_pages'] ?? 1;
             $this->currentPage = $pagination['current_page'] ?? 1;
-        } catch (LicenseValidationException $e) {
-            $this->isKeyError = true;
-            $this->errorMessage = $e->getMessage();
-            $this->packages = [];
-        } catch (ConnectionException) {
-            $this->errorMessage = lang('tipowerup.installer::default.error_connection_failed');
-            $this->packages = [];
-        } catch (RuntimeException $e) {
-            $this->errorMessage = $e->getMessage();
-            $this->packages = [];
-        } catch (Exception) {
-            $this->errorMessage = lang('tipowerup.installer::default.error_generic');
+        } catch (Throwable $e) {
+            $this->handleApiError($e);
             $this->packages = [];
         } finally {
             $this->isLoading = false;
@@ -121,51 +111,28 @@ class Marketplace extends Component
         $this->dispatch('view-package-detail', packageCode: $packageCode, packageData: $packageData)->to(InstallerMain::class);
     }
 
-    public function installPackage(string $packageCode): void
+    public function acquireFreeProduct(string $packageCode, string $packageName): void
     {
-        $packageName = $this->getPackageName($packageCode);
+        $this->resetApiError();
 
-        $this->dispatch('install-started');
-        $this->dispatch('begin-install', packageCode: $packageCode, packageName: $packageName);
+        try {
+            $apiClient = resolve(PowerUpApiClient::class);
+            $apiClient->acquireFreeProduct($packageCode);
+
+            $this->showToast('success', lang('tipowerup.installer::default.success_free_acquired', [
+                'package' => $packageName,
+            ]));
+
+            $this->loadMarketplace();
+            $this->dispatch('api-key-changed');
+        } catch (Throwable $e) {
+            $this->handleApiError($e);
+        }
     }
 
     public function refreshMarketplace(): void
     {
         $this->loadMarketplace();
-    }
-
-    public function toggleBatchSelect(string $packageCode): void
-    {
-        if (in_array($packageCode, $this->selectedForBatch, true)) {
-            $this->selectedForBatch = array_values(
-                array_filter($this->selectedForBatch, fn ($code): bool => $code !== $packageCode)
-            );
-        } else {
-            $this->selectedForBatch[] = $packageCode;
-        }
-    }
-
-    public function batchInstall(): void
-    {
-        if ($this->selectedForBatch === []) {
-            return;
-        }
-
-        $this->dispatch('install-started');
-        $this->dispatch('begin-batch-install', packageCodes: $this->selectedForBatch);
-
-        $this->selectedForBatch = [];
-    }
-
-    public function getPackageName(string $packageCode): string
-    {
-        foreach ($this->packages as $package) {
-            if ($package['code'] === $packageCode) {
-                return $package['name'];
-            }
-        }
-
-        return $packageCode;
     }
 
     /**

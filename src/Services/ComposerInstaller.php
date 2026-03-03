@@ -16,14 +16,18 @@ use Tipowerup\Installer\Exceptions\PackageInstallationException;
 
 class ComposerInstaller
 {
-    private const string REPO_URL = 'https://packages.tipowerup.com';
+    // TODO: CHANGE BEFORE DEPLOYMENT
+    private const string REPO_URL = 'https://tipowerup.test/api/v1/composer';
+    // private const string REPO_URL = 'https://packages.tipowerup.com';
 
     private const int TIMEOUT_SECONDS = 600;
+
+    private ?string $authToken = null;
 
     /**
      * Install a package via Composer.
      */
-    public function install(string $packageCode, array $licenseData): array
+    public function install(string $packageCode, array $licenseData, ?callable $onProgress = null): array
     {
         $this->validatePackageCode($packageCode);
 
@@ -34,48 +38,36 @@ class ComposerInstaller
                 'package_code' => $packageCode,
             ]);
 
-            $authToken = $licenseData['auth_token'] ?? throw new PackageInstallationException(
+            $this->authToken = $licenseData['auth_token'] ?? throw new PackageInstallationException(
                 'Authentication token not provided in license data'
             );
 
             $version = $licenseData['version'] ?? '*';
             $packageType = $licenseData['package_type'] ?? 'extension';
 
-            // Configure Composer repository if not already configured
-            $this->configureRepository();
-
-            // Configure authentication
-            $this->configureAuth($authToken);
-
-            // Get Composer package name
-            $packageName = $this->getComposerPackageName($packageCode);
+            // Ensure the TI PowerUp repository is configured
+            $this->ensureRepository();
 
             // Install package via Composer
             $output = $this->runComposer([
                 'require',
-                sprintf('%s:%s', $packageName, $version),
+                sprintf('%s:%s', $packageCode, $version),
                 '--no-interaction',
                 '--no-progress',
                 '--prefer-dist',
-            ]);
+                '--optimize-autoloader',
+                '--update-with-all-dependencies',
+            ], $onProgress);
 
             Log::debug('ComposerInstaller: Composer output', [
                 'output' => $output,
             ]);
 
             // Determine installed path
-            $vendorPath = base_path('vendor/'.$packageName);
+            $vendorPath = base_path('vendor/'.$packageCode);
 
             // Register with TastyIgniter
             $this->registerWithTI($packageCode, $packageType, $vendorPath);
-
-            // Run migrations for extensions
-            if ($packageType === 'extension') {
-                $this->runMigrations($packageCode);
-            }
-
-            // Clear caches
-            $this->clearCaches();
 
             $duration = microtime(true) - $startTime;
 
@@ -108,7 +100,7 @@ class ComposerInstaller
     /**
      * Update an existing package via Composer.
      */
-    public function update(string $packageCode): array
+    public function update(string $packageCode, ?callable $onProgress = null): array
     {
         $this->validatePackageCode($packageCode);
 
@@ -119,31 +111,29 @@ class ComposerInstaller
                 'package_code' => $packageCode,
             ]);
 
-            // Get Composer package name
-            $packageName = $this->getComposerPackageName($packageCode);
-
             // Get current version before update
-            $currentVersion = $this->getInstalledVersion($packageName);
+            $currentVersion = $this->getInstalledVersion($packageCode);
 
             // Update package via Composer
             $output = $this->runComposer([
                 'update',
-                $packageName,
+                $packageCode,
                 '--no-interaction',
                 '--no-progress',
                 '--prefer-dist',
                 '--with-dependencies',
-            ]);
+                '--optimize-autoloader',
+            ], $onProgress);
 
             Log::debug('ComposerInstaller: Composer output', [
                 'output' => $output,
             ]);
 
             // Get new version after update
-            $newVersion = $this->getInstalledVersion($packageName);
+            $newVersion = $this->getInstalledVersion($packageCode);
 
             // Determine package type from vendor path
-            $vendorPath = base_path('vendor/'.$packageName);
+            $vendorPath = base_path('vendor/'.$packageCode);
             $packageType = File::exists($vendorPath.'/Extension.php') ? 'extension' : 'theme';
 
             // Run migrations for extensions
@@ -201,11 +191,8 @@ class ComposerInstaller
                 'package_code' => $packageCode,
             ]);
 
-            // Get Composer package name
-            $packageName = $this->getComposerPackageName($packageCode);
-
             // Determine package type before uninstall
-            $vendorPath = base_path('vendor/'.$packageName);
+            $vendorPath = base_path('vendor/'.$packageCode);
             $packageType = File::exists($vendorPath.'/Extension.php') ? 'extension' : 'theme';
 
             // Unregister from TI before removal
@@ -234,7 +221,7 @@ class ComposerInstaller
             // Remove package via Composer
             $output = $this->runComposer([
                 'remove',
-                $packageName,
+                $packageCode,
                 '--no-interaction',
                 '--no-progress',
             ]);
@@ -258,85 +245,6 @@ class ComposerInstaller
 
             throw $e;
         }
-    }
-
-    /**
-     * Configure TI PowerUp Composer repository in composer.json.
-     */
-    private function configureRepository(): void
-    {
-        $composerJsonPath = base_path('composer.json');
-
-        if (!File::exists($composerJsonPath)) {
-            throw new PackageInstallationException('composer.json not found');
-        }
-
-        $composerData = json_decode(File::get($composerJsonPath), true);
-
-        if ($composerData === null) {
-            throw new PackageInstallationException('Failed to parse composer.json');
-        }
-
-        // Check if repository already exists
-        $repositories = $composerData['repositories'] ?? [];
-        $repoExists = false;
-
-        foreach ($repositories as $repo) {
-            if (isset($repo['url']) && $repo['url'] === self::REPO_URL) {
-                $repoExists = true;
-
-                break;
-            }
-        }
-
-        // Add repository if not present
-        if (!$repoExists) {
-            $repositories[] = [
-                'type' => 'composer',
-                'url' => self::REPO_URL,
-            ];
-
-            $composerData['repositories'] = $repositories;
-
-            // Write back to composer.json
-            File::put(
-                $composerJsonPath,
-                json_encode($composerData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n"
-            );
-
-            Log::info('ComposerInstaller: Added TI PowerUp repository to composer.json');
-        }
-    }
-
-    /**
-     * Configure HTTP basic authentication for TI PowerUp repository.
-     */
-    private function configureAuth(string $authToken): void
-    {
-        $authJsonPath = base_path('auth.json');
-
-        // Read existing auth.json or create new structure
-        $authData = File::exists($authJsonPath)
-            ? json_decode(File::get($authJsonPath), true) ?? []
-            : [];
-
-        // Set HTTP basic auth for TI PowerUp repository
-        $authData['http-basic'] ??= [];
-        $authData['http-basic']['packages.tipowerup.com'] = [
-            'username' => 'token',
-            'password' => $authToken,
-        ];
-
-        // Write auth.json
-        File::put(
-            $authJsonPath,
-            json_encode($authData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n"
-        );
-
-        // Set proper permissions (readable only by owner)
-        chmod($authJsonPath, 0600);
-
-        Log::info('ComposerInstaller: Configured authentication');
     }
 
     /**
@@ -377,20 +285,57 @@ class ComposerInstaller
     }
 
     /**
+     * Ensure the TI PowerUp Composer repository is configured in composer.json.
+     */
+    private function ensureRepository(): void
+    {
+        $composerJsonPath = base_path('composer.json');
+        $composerData = json_decode(file_get_contents($composerJsonPath), true);
+
+        // Check if repository already exists
+        foreach ($composerData['repositories'] ?? [] as $repo) {
+            if (($repo['url'] ?? '') === self::REPO_URL) {
+                return;
+            }
+        }
+
+        // Add repository via composer config
+        $this->runComposer([
+            'config',
+            'repositories.tipowerup',
+            'composer',
+            self::REPO_URL,
+            '--no-interaction',
+        ]);
+
+        Log::info('ComposerInstaller: Added TI PowerUp repository to composer.json');
+    }
+
+    /**
      * Run Composer command using Symfony Process.
      */
-    private function runComposer(array $command): string
+    private function runComposer(array $command, ?callable $onProgress = null): string
     {
-        // Determine the Composer binary
         $binary = $this->findComposerBinary();
         array_unshift($command, ...$binary);
+
+        $env = [
+            'COMPOSER_MEMORY_LIMIT' => '-1',
+            'COMPOSER_NO_AUDIT' => '1',
+        ];
+
+        if ($this->authToken !== null) {
+            $env['COMPOSER_AUTH'] = json_encode([
+                'bearer' => [
+                    parse_url(self::REPO_URL, PHP_URL_HOST) => $this->authToken,
+                ],
+            ]);
+        }
 
         $process = new Process(
             command: $command,
             cwd: base_path(),
-            env: [
-                'COMPOSER_MEMORY_LIMIT' => '-1',
-            ],
+            env: $env,
             timeout: self::TIMEOUT_SECONDS
         );
 
@@ -399,10 +344,34 @@ class ComposerInstaller
                 'command' => implode(' ', $command),
             ]);
 
-            $process->mustRun();
+            if ($onProgress !== null) {
+                $process->start();
+                $lastPercent = 0;
+
+                foreach ($process as $type => $data) {
+                    if ($type === Process::ERR && trim($data) !== '') {
+                        $line = trim($data);
+                        $newPercent = $this->parseComposerProgress($line, $lastPercent);
+                        if ($newPercent > $lastPercent) {
+                            $lastPercent = $newPercent;
+                            $onProgress($lastPercent, $line);
+                        }
+                    }
+                }
+
+                if (!$process->isSuccessful()) {
+                    throw new PackageInstallationException(
+                        sprintf('Composer command failed: %s%s%s', $process->getExitCodeText(), PHP_EOL, $process->getErrorOutput())
+                    );
+                }
+            } else {
+                $process->mustRun();
+            }
 
             return $process->getOutput();
 
+        } catch (PackageInstallationException $e) {
+            throw $e;
         } catch (Throwable $e) {
             $errorOutput = $process->getErrorOutput();
 
@@ -417,14 +386,6 @@ class ComposerInstaller
                 sprintf('Composer command failed: %s%s%s', $e->getMessage(), PHP_EOL, $errorOutput)
             );
         }
-    }
-
-    /**
-     * Convert package code to Composer package name.
-     */
-    private function getComposerPackageName(string $packageCode): string
-    {
-        return str_replace('.', '/', $packageCode);
     }
 
     /**
@@ -466,8 +427,16 @@ class ComposerInstaller
         try {
             if ($type === 'extension') {
                 $extensionManager = resolve(ExtensionManager::class);
-                $extensionManager->loadExtension($path);
-                $extensionManager->installExtension($packageCode);
+                $extension = $extensionManager->loadExtension($path);
+                $extensionCode = $extensionManager->getIdentifier(
+                    (new \ReflectionClass($extension))->getNamespaceName()
+                );
+                if ($extensionCode === false || $extensionCode === '') {
+                    throw new PackageInstallationException(
+                        'Failed to determine extension code after loading: '.$packageCode
+                    );
+                }
+                $extensionManager->installExtension($extensionCode);
             } else {
                 $themeManager = resolve(ThemeManager::class);
                 $themeManager->loadTheme($path);
@@ -483,17 +452,25 @@ class ComposerInstaller
     /**
      * Run migrations for extension.
      */
-    private function runMigrations(string $packageCode): void
+    public function runMigrations(string $packageCode): void
     {
         try {
             Log::debug('ComposerInstaller: Running migrations', [
                 'package_code' => $packageCode,
             ]);
 
-            Artisan::call('igniter:up', [
-                '--force' => true,
-            ]);
+            $vendorPath = base_path('vendor/'.$packageCode);
+            $extensionCode = $this->resolveExtensionCode($vendorPath);
 
+            if ($extensionCode !== '') {
+                resolve(\Igniter\System\Classes\UpdateManager::class)->migrateExtension($extensionCode);
+
+                return;
+            }
+
+            Log::warning('ComposerInstaller: Could not resolve extension code, skipping migrations', [
+                'package_code' => $packageCode,
+            ]);
         } catch (Throwable $e) {
             throw PackageInstallationException::migrationFailed(
                 $packageCode,
@@ -502,12 +479,46 @@ class ComposerInstaller
         }
     }
 
+    private function resolveExtensionCode(string $vendorPath): string
+    {
+        $extensionManager = resolve(ExtensionManager::class);
+        $extension = $extensionManager->loadExtension($vendorPath);
+
+        if ($extension === null) {
+            return '';
+        }
+
+        $code = $extensionManager->getIdentifier(
+            (new \ReflectionClass($extension))->getNamespaceName()
+        );
+
+        return ($code !== false && $code !== '') ? $code : '';
+    }
+
+    private function parseComposerProgress(string $line, int $lastPercent): int
+    {
+        return match (true) {
+            str_contains($line, 'Loading composer repositories') => 10,
+            str_contains($line, 'Updating dependencies') => 20,
+            str_contains($line, 'Resolving dependencies') => 30,
+            str_contains($line, 'Dependency resolution completed') => 40,
+            str_contains($line, 'Package operations') => 50,
+            str_contains($line, 'Installing') || str_contains($line, 'Updating') => 60,
+            str_contains($line, 'Downloading') => 65,
+            str_contains($line, 'Extracting') => 70,
+            str_contains($line, 'Generating') && str_contains($line, 'autoload') => 85,
+            str_contains($line, 'Generated') && str_contains($line, 'autoload') => 90,
+            str_contains($line, 'No security vulnerability') => 95,
+            default => $lastPercent,
+        };
+    }
+
     /**
      * Validate package code format.
      */
     private function validatePackageCode(string $packageCode): void
     {
-        if (!preg_match('/^[a-z][a-z0-9]*\.[a-z][a-z0-9]*$/i', $packageCode)) {
+        if (!preg_match('/^[a-z][a-z0-9-]*\/[a-z][a-z0-9-]*$/i', $packageCode)) {
             throw new InvalidArgumentException(
                 sprintf("Invalid package code format: '%s'", $packageCode)
             );

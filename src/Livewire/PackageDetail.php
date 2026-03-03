@@ -113,7 +113,9 @@ class PackageDetail extends Component
 
     public function installPackage(): void
     {
-        $this->dispatch('install-started', packageCode: $this->packageCode, packageName: $this->packageData['name'] ?? $this->packageCode);
+        $packageName = $this->packageData['name'] ?? $this->packageCode;
+
+        $this->dispatch('begin-install', packageCode: $this->packageCode, packageName: $packageName);
         $this->dispatch('package-detail-closed');
     }
 

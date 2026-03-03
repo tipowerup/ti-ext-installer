@@ -20,11 +20,11 @@ it('validates package code format', function (): void {
 it('returns false when no backup exists', function (): void {
     $manager = new BackupManager;
 
-    expect($manager->hasBackup('tipowerup.testpackage'))->toBeFalse();
+    expect($manager->hasBackup('tipowerup/testpackage'))->toBeFalse();
 });
 
 it('returns null backup info when no backup exists', function (): void {
     $manager = new BackupManager;
 
-    expect($manager->getBackupInfo('tipowerup.testpackage'))->toBeNull();
+    expect($manager->getBackupInfo('tipowerup/testpackage'))->toBeNull();
 });

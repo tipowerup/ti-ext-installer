@@ -28,7 +28,6 @@ class License extends Model
         'package_type',
         'version',
         'install_method',
-        'license_hash',
         'installed_at',
         'updated_at',
         'expires_at',

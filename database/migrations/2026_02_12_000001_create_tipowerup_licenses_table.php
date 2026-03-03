@@ -20,7 +20,6 @@ return new class extends Migration
             $table->enum('package_type', ['extension', 'theme']);
             $table->string('version', 20);
             $table->enum('install_method', ['direct', 'composer']);
-            $table->string('license_hash', 64);
             $table->timestamp('installed_at');
             $table->timestamp('updated_at');
             $table->timestamp('expires_at')->nullable();

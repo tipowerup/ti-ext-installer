@@ -9,7 +9,9 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\Process\PhpExecutableFinder;
 use Throwable;
+use Tipowerup\Installer\Exceptions\PackageInstallationException;
 
 class ComposerPharManager
 {
@@ -38,7 +40,14 @@ class ComposerPharManager
      */
     public function getPharCommand(): array
     {
-        return [PHP_BINARY, $this->getPharPath()];
+        $phpFinder = new PhpExecutableFinder;
+        $phpBinary = $phpFinder->find();
+
+        if ($phpBinary === false) {
+            throw new PackageInstallationException('Unable to find the PHP CLI binary.');
+        }
+
+        return [$phpBinary, $this->getPharPath()];
     }
 
     /**

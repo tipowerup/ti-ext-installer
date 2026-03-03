@@ -85,9 +85,11 @@ class PowerUpApiClient
 
     public function checkUpdates(array $installedPackages): array
     {
-        return $this->makeRequest('POST', '/api/v1/powerup/check-updates', [
+        $response = $this->makeRequest('POST', '/api/v1/powerup/check-updates', [
             'packages' => $installedPackages,
         ]);
+
+        return $response['data'] ?? [];
     }
 
     public function getMyPackages(): array
@@ -109,7 +111,9 @@ class PowerUpApiClient
 
     public function getPackageDetail(string $packageCode): array
     {
-        return $this->makeRequest('GET', '/api/v1/powerup/packages/'.$packageCode);
+        $response = $this->makeRequest('GET', '/api/v1/powerup/products/'.$packageCode);
+
+        return $response['data'] ?? [];
     }
 
     public function getProductVersion(string $slug): array
@@ -120,6 +124,19 @@ class PowerUpApiClient
     public function downloadProduct(string $slug): array
     {
         return $this->makeRequest('GET', '/api/v1/powerup/product/'.$slug.'/download');
+    }
+
+    public function acquireFreeProduct(string $packageCode): array
+    {
+        $data = $this->makeRequest('POST', '/api/v1/powerup/acquire-free', [
+            'package_code' => $packageCode,
+        ]);
+
+        if (!($data['success'] ?? false)) {
+            throw new RuntimeException($data['error'] ?? 'Failed to acquire product.');
+        }
+
+        return $data['data'] ?? [];
     }
 
     private function makeRequest(string $method, string $uri, array $data = []): array
@@ -170,10 +187,11 @@ class PowerUpApiClient
 
                 // If it's a client error (4xx), don't retry
                 if ($response->clientError()) {
-                    throw new RuntimeException(
-                        $response->json('message', 'API request failed: '.$response->body()),
-                        $response->status()
-                    );
+                    $errorMessage = $response->json('message')
+                        ?? $response->json('error')
+                        ?? 'API request failed';
+
+                    throw new RuntimeException($errorMessage, $response->status());
                 }
 
                 // Server error (5xx), retry

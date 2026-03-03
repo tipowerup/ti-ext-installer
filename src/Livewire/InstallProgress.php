@@ -6,8 +6,8 @@ namespace Tipowerup\Installer\Livewire;
 
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Livewire\Attributes\On;
 use Livewire\Component;
 use Throwable;
 use Tipowerup\Installer\Services\HostingDetector;
@@ -31,25 +31,41 @@ class InstallProgress extends Component
 
     public bool $hasFailed = false;
 
+    public bool $isCancelled = false;
+
     public ?string $errorMessage = null;
 
     public array $stages = [
         ['key' => 'preparing', 'label' => 'Preparing', 'status' => 'pending'],
-        ['key' => 'downloading', 'label' => 'Downloading', 'status' => 'pending'],
-        ['key' => 'verifying', 'label' => 'Verifying', 'status' => 'pending'],
-        ['key' => 'extracting', 'label' => 'Extracting', 'status' => 'pending'],
+        ['key' => 'compatibility', 'label' => 'Compatibility Check', 'status' => 'pending'],
+        ['key' => 'backup', 'label' => 'Backup', 'status' => 'pending'],
+        ['key' => 'installing', 'label' => 'Installing', 'status' => 'pending'],
         ['key' => 'migrating', 'label' => 'Migrating', 'status' => 'pending'],
         ['key' => 'finalizing', 'label' => 'Finalizing', 'status' => 'pending'],
     ];
 
-    #[On('begin-install')]
-    public function beginInstall(string $packageCode, string $packageName): void
+    public function mount(?string $packageCode = null, string $packageName = ''): void
+    {
+        if ($packageCode !== null) {
+            $this->startInstall($packageCode, $packageName);
+        }
+    }
+
+    public function retryInstall(): void
+    {
+        if ($this->packageCode !== null) {
+            $this->startInstall($this->packageCode, $this->packageName);
+        }
+    }
+
+    private function startInstall(string $packageCode, string $packageName): void
     {
         $this->packageCode = $packageCode;
         $this->packageName = $packageName;
         $this->batchId = (string) Str::uuid();
         $this->isCompleted = false;
         $this->hasFailed = false;
+        $this->isCancelled = false;
         $this->errorMessage = null;
 
         // Reset stages
@@ -62,12 +78,16 @@ class InstallProgress extends Component
         $method = $preferredMethod === 'auto' ? $hostingDetector->getRecommendedMethod() : $preferredMethod;
 
         // Start installation in background
-        dispatch(function () use ($packageCode, $method): void {
+        $batchId = $this->batchId;
+        dispatch(function () use ($packageCode, $method, $batchId): void {
             try {
                 $pipeline = resolve(InstallationPipeline::class);
-                $pipeline->execute($packageCode, $method);
-            } catch (Throwable) {
-                // Error will be captured in progress table
+                $pipeline->execute($packageCode, $method, null, $batchId);
+            } catch (Throwable $e) {
+                Log::error('InstallProgress: Pipeline execution failed', [
+                    'package_code' => $packageCode,
+                    'error' => $e->getMessage(),
+                ]);
             }
         })->afterResponse();
     }
@@ -94,14 +114,19 @@ class InstallProgress extends Component
         $this->statusMessage = $progress->message ?? '';
 
         // Update stages based on current stage
-        $this->updateStages($progress->stage);
+        $this->updateStages($progress->stage, $progress->failed_stage ?? null);
 
-        // Check for completion or failure
+        // Check for completion, cancellation, or failure
         if ($progress->stage === 'complete') {
             $this->isCompleted = true;
+        } elseif ($progress->stage === 'cancelled') {
+            $this->isCancelled = true;
+            $this->hasFailed = true;
+            $this->errorMessage = $this->getErrorMessage('cancelled');
         } elseif ($progress->stage === 'failed') {
             $this->hasFailed = true;
-            $this->errorMessage = $progress->error ?? 'Unknown error occurred';
+            $errorCode = $progress->error_code ?? 'unknown';
+            $this->errorMessage = $this->getErrorMessage($errorCode);
         }
     }
 
@@ -110,14 +135,9 @@ class InstallProgress extends Component
         $this->dispatch('install-completed');
     }
 
-    public function retryInstall(): void
+    private function updateStages(string $currentStage, ?string $failedStage = null): void
     {
-        $this->beginInstall($this->packageCode, $this->packageName);
-    }
-
-    private function updateStages(string $currentStage): void
-    {
-        $stageOrder = ['preparing', 'downloading', 'verifying', 'extracting', 'migrating', 'finalizing'];
+        $stageOrder = ['preparing', 'compatibility', 'backup', 'installing', 'migrating', 'finalizing'];
         $currentIndex = array_search($currentStage, $stageOrder, true);
 
         if ($currentIndex === false && $currentStage === 'complete') {
@@ -127,10 +147,26 @@ class InstallProgress extends Component
             return;
         }
 
-        if ($currentIndex === false && $currentStage === 'failed') {
-            // Mark current as error, previous as completed
+        if ($currentIndex === false && in_array($currentStage, ['failed', 'cancelled'], true)) {
+            $failedIndex = null;
+            if ($failedStage !== null) {
+                $stageKeys = array_column($this->stages, 'key');
+                $failedIndex = array_search($failedStage, $stageKeys, true);
+            }
+
             foreach ($this->stages as $index => &$stage) {
-                $stage['status'] = $index < count($this->stages) - 1 ? 'completed' : 'error';
+                if ($failedIndex !== null && $failedIndex !== false) {
+                    if ($index < $failedIndex) {
+                        $stage['status'] = 'completed';
+                    } elseif ($index === $failedIndex) {
+                        $stage['status'] = 'error';
+                    } else {
+                        $stage['status'] = 'pending';
+                    }
+                } else {
+                    // Fallback: mark all as completed except last
+                    $stage['status'] = $index < count($this->stages) - 1 ? 'completed' : 'error';
+                }
             }
 
             return;
@@ -146,6 +182,56 @@ class InstallProgress extends Component
                 $stage['status'] = 'pending';
             }
         }
+    }
+
+    private function getErrorMessage(string $errorCode): string
+    {
+        $langKey = 'tipowerup.installer::default.progress_error_'.$errorCode;
+        $message = lang($langKey);
+
+        // If lang returns the key itself, it means no translation exists — use fallback
+        if ($message === $langKey) {
+            return lang('tipowerup.installer::default.progress_error_unknown');
+        }
+
+        return $message;
+    }
+
+    public function cancelInstall(): void
+    {
+        if (!$this->batchId || $this->isCompleted || $this->hasFailed || $this->isCancelled) {
+            return;
+        }
+
+        // Only allow cancel during safe stages
+        $safeStages = ['preparing', 'compatibility', 'backup'];
+        if (!in_array($this->currentStage, $safeStages, true)) {
+            return;
+        }
+
+        DB::table('tipowerup_install_progress')->updateOrInsert(
+            [
+                'batch_id' => $this->batchId,
+                'package_code' => $this->packageCode,
+            ],
+            [
+                'stage' => 'cancelled',
+                'error_code' => 'cancelled',
+                'failed_stage' => $this->currentStage,
+                'updated_at' => now(),
+            ]
+        );
+    }
+
+    public function getCanCancelProperty(): bool
+    {
+        if ($this->isCompleted || $this->hasFailed || $this->isCancelled) {
+            return false;
+        }
+
+        $safeStages = ['preparing', 'compatibility', 'backup'];
+
+        return in_array($this->currentStage, $safeStages, true);
     }
 
     public function render(): View

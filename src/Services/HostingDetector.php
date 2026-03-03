@@ -203,11 +203,57 @@ class HostingDetector
         $memory = $this->getMemoryLimitMB();
         $hasAdequateMemory = ($memory >= 128 || $memory === -1);
 
-        if ($this->canProcOpen() && $hasAdequateMemory && $this->isComposerAvailable()) {
+        if ($this->canProcOpen() && $hasAdequateMemory && $this->isComposerAvailable() && $this->isComposerWritable()) {
             return 'composer';
         }
 
         return 'direct';
+    }
+
+    /**
+     * Check whether all paths required by the Composer install method are writable.
+     */
+    public function isComposerWritable(): bool
+    {
+        return empty($this->getUnwritableComposerPaths());
+    }
+
+    /**
+     * Return a list of paths required by Composer that are not currently writable.
+     *
+     * @return array<int, string>
+     */
+    public function getUnwritableComposerPaths(): array
+    {
+        $failed = [];
+
+        // composer.json must be writable (or its parent directory if the file doesn't exist yet)
+        $composerJson = base_path('composer.json');
+        if (file_exists($composerJson)) {
+            if (!is_writable($composerJson)) {
+                $failed[] = $composerJson;
+            }
+        } elseif (!is_writable(dirname($composerJson))) {
+            $failed[] = $composerJson;
+        }
+
+        // composer.lock must be writable (or its parent directory if it doesn't exist yet)
+        $composerLock = base_path('composer.lock');
+        if (file_exists($composerLock)) {
+            if (!is_writable($composerLock)) {
+                $failed[] = $composerLock;
+            }
+        } elseif (!is_writable(dirname($composerLock))) {
+            $failed[] = $composerLock;
+        }
+
+        // vendor directory must exist and be writable
+        $vendor = base_path('vendor');
+        if (!is_dir($vendor) || !is_writable($vendor)) {
+            $failed[] = $vendor;
+        }
+
+        return $failed;
     }
 
     public function clearCache(): void

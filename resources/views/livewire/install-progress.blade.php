@@ -5,6 +5,9 @@
             @if($isCompleted)
                 <i class="fa fa-check-circle text-success me-2"></i>
                 {{ lang('tipowerup.installer::default.progress_stage_completed') }}
+            @elseif($isCancelled)
+                <i class="fa fa-ban text-warning me-2"></i>
+                {{ lang('tipowerup.installer::default.progress_stage_cancelled') }}
             @elseif($hasFailed)
                 <i class="fa fa-times-circle text-danger me-2"></i>
                 {{ lang('tipowerup.installer::default.progress_stage_failed') }}
@@ -20,7 +23,7 @@
         <div class="tipowerup-installer__progress-bar mb-4">
             <div class="tipowerup-installer__progress-fill" style="width: {{ $progressPercent }}%"></div>
         </div>
-        <p class="text-center text-muted small mb-4">{{ $progressPercent }}% {{ lang('tipowerup.installer::default.progress_stage_completed') }}</p>
+        <p class="text-center text-muted small mb-4">{{ $progressPercent }}%</p>
     @endif
 
     {{-- Progress Steps --}}
@@ -56,7 +59,7 @@
     </ul>
 
     {{-- Status Message --}}
-    @if($statusMessage && !$isCompleted && !$hasFailed)
+    @if($statusMessage && !$isCompleted && !$hasFailed && !$isCancelled)
         <div class="alert alert-info mt-4 mb-0" role="alert">
             <i class="fa fa-info-circle me-2"></i>
             {{ $statusMessage }}
@@ -69,6 +72,11 @@
             <i class="fa fa-exclamation-triangle me-2"></i>
             <strong>{{ lang('tipowerup.installer::default.progress_stage_failed') }}</strong>
             <p class="mb-0 mt-2 small">{{ $errorMessage }}</p>
+            @if(!$isCancelled)
+                <p class="mb-0 mt-2 small text-muted">
+                    {{ lang('tipowerup.installer::default.progress_error_help_logs') }}
+                </p>
+            @endif
         </div>
     @endif
 
@@ -90,12 +98,19 @@
             <button wire:click="closeProgress" type="button" class="btn btn-secondary">
                 {{ lang('tipowerup.installer::default.progress_close') }}
             </button>
-            <button wire:click="retryInstall" type="button" class="btn btn-primary">
-                <i class="fa fa-redo me-2"></i>
-                {{ lang('tipowerup.installer::default.progress_retry') }}
-            </button>
+            @if(!$isCancelled)
+                <button wire:click="retryInstall" type="button" class="btn btn-primary">
+                    <i class="fa fa-redo me-2"></i>
+                    {{ lang('tipowerup.installer::default.progress_retry') }}
+                </button>
+            @endif
         @else
-            <button type="button" class="btn btn-outline-secondary" disabled>
+            <button wire:click="cancelInstall"
+                wire:loading.attr="disabled"
+                type="button"
+                class="btn btn-outline-danger"
+                @if(!$this->canCancel) disabled @endif
+            >
                 {{ lang('tipowerup.installer::default.progress_cancel') }}
             </button>
         @endif

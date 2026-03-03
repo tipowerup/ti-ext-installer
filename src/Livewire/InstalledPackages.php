@@ -9,17 +9,18 @@ use Igniter\Main\Classes\ThemeManager;
 use Igniter\Main\Models\Theme;
 use Igniter\System\Classes\ExtensionManager;
 use Illuminate\Contracts\View\View;
-use Illuminate\Http\Client\ConnectionException;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Throwable;
-use Tipowerup\Installer\Exceptions\LicenseValidationException;
+use Tipowerup\Installer\Livewire\Concerns\HandlesApiErrors;
 use Tipowerup\Installer\Models\License;
 use Tipowerup\Installer\Services\PackageInstaller;
 use Tipowerup\Installer\Services\PowerUpApiClient;
 
 class InstalledPackages extends Component
 {
+    use HandlesApiErrors;
+
     /**
      * @var array<int, array{code: string, name: string, description: string, version: string, latest_version: string, type: string, install_method: string, is_active: bool, expires_at: ?string, has_update: bool, icon: string, is_owned: bool, settings_url: ?string, edit_url: ?string, customize_url: ?string}>
      */
@@ -41,10 +42,6 @@ class InstalledPackages extends Component
      */
     public array $availableUpdates = [];
 
-    public ?string $errorMessage = null;
-
-    public bool $isKeyError = false;
-
     public bool $installedCollapsed = false;
 
     public bool $availableCollapsed = false;
@@ -65,8 +62,7 @@ class InstalledPackages extends Component
     public function loadPackages(): void
     {
         $this->isLoading = true;
-        $this->errorMessage = null;
-        $this->isKeyError = false;
+        $this->resetApiError();
 
         try {
             // 1. Scan TI registries for on-system tipowerup extensions & themes
@@ -119,6 +115,7 @@ class InstalledPackages extends Component
                     'code' => $pkg['code'],
                     'name' => $pkg['name'] ?? $pkg['code'],
                     'description' => $pkg['description'] ?? '',
+                    'version' => $pkg['version'] ?? null,
                     'type' => $pkg['type'] ?? 'extension',
                     'icon' => $pkg['icon'] ?? $this->getDefaultIcon($pkg['type'] ?? 'extension'),
                     'url' => $pkg['url'] ?? null,
@@ -129,17 +126,8 @@ class InstalledPackages extends Component
                 ->values()
                 ->toArray();
 
-        } catch (LicenseValidationException $e) {
-            $this->isKeyError = true;
-            $this->errorMessage = $e->getMessage();
-            $this->installedPackages = [];
-            $this->availablePackages = [];
-        } catch (ConnectionException) {
-            $this->errorMessage = lang('tipowerup.installer::default.error_connection_failed');
-            $this->installedPackages = [];
-            $this->availablePackages = [];
         } catch (Throwable $e) {
-            $this->errorMessage = $e->getMessage();
+            $this->handleApiError($e);
             $this->installedPackages = [];
             $this->availablePackages = [];
         } finally {
@@ -287,8 +275,7 @@ class InstalledPackages extends Component
     public function checkUpdates(): void
     {
         $this->isCheckingUpdates = true;
-        $this->errorMessage = null;
-        $this->isKeyError = false;
+        $this->resetApiError();
 
         try {
             $installer = resolve(PackageInstaller::class);
@@ -306,13 +293,8 @@ class InstalledPackages extends Component
             // Refresh packages to show updated info
             $this->loadPackages();
 
-        } catch (LicenseValidationException $e) {
-            $this->isKeyError = true;
-            $this->errorMessage = $e->getMessage();
-        } catch (ConnectionException) {
-            $this->errorMessage = lang('tipowerup.installer::default.error_connection_failed');
         } catch (Throwable $e) {
-            $this->errorMessage = $e->getMessage();
+            $this->handleApiError($e);
         } finally {
             $this->isCheckingUpdates = false;
         }
@@ -340,11 +322,10 @@ class InstalledPackages extends Component
 
     public function installPackage(string $packageCode): void
     {
-        // Dispatch event to parent (InstallerMain)
-        $this->dispatch('install-started');
+        $packageName = $this->resolveAvailablePackageName($packageCode);
 
-        // Dispatch event to InstallProgress component
-        $this->dispatch('begin-install', packageCode: $packageCode);
+        $this->dispatch('install-started');
+        $this->dispatch('begin-install', packageCode: $packageCode, packageName: $packageName);
     }
 
     public function updatePackage(string $packageCode): void
@@ -572,9 +553,9 @@ class InstalledPackages extends Component
     }
 
     #[On('install-completed')]
+    #[On('api-key-changed')]
     public function onInstallCompleted(): void
     {
-        // Reload packages to reflect new state
         $this->loadPackages();
     }
 
@@ -643,6 +624,16 @@ class InstalledPackages extends Component
     }
 
     /**
+     * Resolve the human-readable name for an available (not yet installed) package code.
+     */
+    private function resolveAvailablePackageName(string $code): string
+    {
+        $package = collect($this->availablePackages)->firstWhere('code', $code);
+
+        return $package['name'] ?? $code;
+    }
+
+    /**
      * Resolve the TI extension code (e.g. "tipowerup.darkmode") from a composer package name.
      */
     private function resolveExtensionCode(string $code): string
@@ -665,12 +656,6 @@ class InstalledPackages extends Component
     /**
      * Show a TI admin toast notification via SweetAlert.
      */
-    private function showToast(string $level, string $message): void
-    {
-        $escaped = addslashes($message);
-        $this->js("$.ti.flashMessage({level: '{$level}', html: '{$escaped}'})");
-    }
-
     private function getDefaultIcon(string $packageType): string
     {
         return match ($packageType) {

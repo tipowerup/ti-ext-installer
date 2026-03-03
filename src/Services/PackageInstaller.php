@@ -70,7 +70,6 @@ class PackageInstaller
                 'package_type' => $licenseData['package_type'] ?? 'extension',
                 'version' => $result['version'] ?? 'unknown',
                 'install_method' => $method,
-                'license_hash' => $this->hashLicense($licenseData),
                 'installed_at' => now(),
                 'updated_at' => now(),
                 'expires_at' => isset($licenseData['expires_at'])
@@ -181,7 +180,6 @@ class PackageInstaller
             $license->update([
                 'version' => $result['to_version'] ?? $result['version'] ?? 'unknown',
                 'updated_at' => now(),
-                'license_hash' => $this->hashLicense($licenseData),
                 'expires_at' => isset($licenseData['expires_at'])
                     ? new DateTime($licenseData['expires_at'])
                     : null,
@@ -412,20 +410,6 @@ class PackageInstaller
                 sprintf("Invalid package code format: '%s'", $packageCode)
             );
         }
-    }
-
-    /**
-     * Hash license data for integrity verification.
-     */
-    private function hashLicense(array $licenseData): string
-    {
-        $dataToHash = [
-            'package_code' => $licenseData['package_code'] ?? '',
-            'domain' => request()->getHost(),
-            'expires_at' => $licenseData['expires_at'] ?? '',
-        ];
-
-        return hash('sha256', json_encode($dataToHash));
     }
 
     /**

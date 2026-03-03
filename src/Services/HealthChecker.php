@@ -101,6 +101,32 @@ class HealthChecker
             'critical' => false,
         ];
 
+        // Composer Writable Check
+        $unwritablePaths = $this->hostingDetector->getUnwritableComposerPaths();
+        $composerWritable = $unwritablePaths === [];
+        $currentInstallMethod = params('tipowerup_install_method', 'auto');
+        $composerWritableCritical = $currentInstallMethod === 'composer';
+
+        $composerWritableFix = null;
+        if (!$composerWritable) {
+            $pathList = implode(', ', array_map(
+                static fn (string $path): string => str_replace(base_path().'/', '', $path),
+                $unwritablePaths,
+            ));
+            $composerWritableFix = lang('tipowerup.installer::default.health_composer_writable_fix', ['paths' => $pathList]);
+        }
+
+        $checks[] = [
+            'key' => 'composer_writable',
+            'label' => lang('tipowerup.installer::default.health_composer_writable'),
+            'passed' => $composerWritable,
+            'message' => $composerWritable
+                ? lang('tipowerup.installer::default.health_composer_writable_passed')
+                : lang('tipowerup.installer::default.health_composer_writable_failed'),
+            'fix' => $composerWritableFix,
+            'critical' => $composerWritableCritical,
+        ];
+
         // API Connectivity Check
         $apiReachable = false;
 

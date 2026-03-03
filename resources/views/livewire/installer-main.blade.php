@@ -114,7 +114,9 @@
                 <div class="modal-dialog modal-dialog-centered">
                     <div class="modal-content">
                         <div class="modal-body">
-                            <livewire:tipowerup-installer::install-progress />
+                            <livewire:tipowerup-installer::install-progress
+                                :package-code="$installPackageCode"
+                                :package-name="$installPackageName" />
                         </div>
                     </div>
                 </div>

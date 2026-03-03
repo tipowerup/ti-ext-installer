@@ -68,6 +68,25 @@ class SettingsPanel extends Component
                 return;
             }
 
+            // When composer is explicitly selected, ensure all required paths are writable
+            if ($this->installMethod === 'composer') {
+                $hostingDetector = resolve(HostingDetector::class);
+                $unwritablePaths = $hostingDetector->getUnwritableComposerPaths();
+
+                if ($unwritablePaths !== []) {
+                    $pathList = implode(', ', array_map(
+                        static fn (string $path): string => str_replace(base_path().'/', '', $path),
+                        $unwritablePaths,
+                    ));
+                    $this->errorMessage = lang(
+                        'tipowerup.installer::default.error_composer_not_writable',
+                        ['paths' => $pathList],
+                    );
+
+                    return;
+                }
+            }
+
             // Save install method preference
             Settings::setPref('tipowerup_install_method', $this->installMethod);
 
@@ -118,6 +137,8 @@ class SettingsPanel extends Component
             $this->loadEnvironmentInfo();
 
             $this->successMessage = lang('tipowerup.installer::default.success_api_key_verified');
+
+            $this->dispatch('api-key-changed');
         } catch (Throwable $e) {
             $this->errorMessage = $e->getMessage();
         } finally {

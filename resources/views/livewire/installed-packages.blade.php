@@ -5,14 +5,17 @@
             <i class="fa fa-exclamation-triangle me-2 mt-1 flex-shrink-0"></i>
             <div class="flex-grow-1">
                 @if($isKeyError)
-                    <strong>{{ lang('tipowerup.installer::default.error_powerup_key_invalid_alert') }}</strong>
-                    <p class="mb-0 mt-1 small">{{ $errorMessage }}</p>
+                    {{ lang('tipowerup.installer::default.error_powerup_key_invalid_alert') }}
+                    <a href="#" wire:click.prevent="$dispatch('open-settings')" class="alert-link">
+                        {{ lang('tipowerup.installer::default.settings_title') }}
+                    </a>
                 @else
-                    <strong>{{ lang('tipowerup.installer::default.error_connection_failed') }}</strong>
-                    <p class="mb-0 mt-1 small">{{ $errorMessage }}</p>
+                    {{ $errorMessage }}
                 @endif
             </div>
-            <button wire:click="$set('errorMessage', null)" type="button" class="btn-close btn-close-sm flex-shrink-0 ms-2"></button>
+            @if(!$isKeyError)
+                <button wire:click="$set('errorMessage', null)" type="button" class="btn-close btn-close-sm flex-shrink-0 ms-2"></button>
+            @endif
         </div>
     @endif
 
@@ -105,7 +108,7 @@
                         <h6 class="mb-0 fw-semibold" style="font-size: 0.9375rem;">
                             {{ lang('tipowerup.installer::default.updates_title') }}
                         </h6>
-                        <span class="badge bg-info" style="font-size: 0.6875rem;">{{ count($packagesWithUpdates) }}</span>
+                        <span class="badge text-white" style="font-size: 0.6875rem; background-color: #0d9488;">{{ count($packagesWithUpdates) }}</span>
                     </div>
                 </div>
 
@@ -154,7 +157,7 @@
                         <h6 class="mb-0 fw-semibold" style="font-size: 0.9375rem;">
                             {{ lang('tipowerup.installer::default.my_powerups_installed_title') }}
                         </h6>
-                        <span class="badge bg-secondary" style="font-size: 0.6875rem;">{{ count($installedPackages) }}</span>
+                        <span class="badge text-white" style="font-size: 0.6875rem; background-color: #3b82f6;">{{ count($installedPackages) }}</span>
                     </div>
                 </div>
 
@@ -480,8 +483,8 @@
                             </table>
                         </div>
                     @endif
-                </div>
             @endif
+            </div>
         @endif
 
         {{-- Divider between sections --}}
@@ -501,7 +504,7 @@
                         <h6 class="mb-0 fw-semibold" style="font-size: 0.9375rem;">
                             {{ lang('tipowerup.installer::default.my_powerups_available_title') }}
                         </h6>
-                        <span class="badge bg-secondary" style="font-size: 0.6875rem;">{{ count($availablePackages) }}</span>
+                        <span class="badge text-white" style="font-size: 0.6875rem; background-color: #F97316;">{{ count($availablePackages) }}</span>
                     </div>
                 </div>
 
@@ -522,10 +525,13 @@
                                                 <h6 class="tipowerup-installer__package-name mb-0">
                                                     {{ $package['name'] }}
                                                 </h6>
-                                                <div class="text-muted" style="font-size: 0.8125rem;">
+                                                <div class="d-flex align-items-center gap-1 mt-1">
                                                     <span class="tipowerup-installer__badge tipowerup-installer__badge--{{ $package['type'] }}">
                                                         {{ ucfirst($package['type']) }}
                                                     </span>
+                                                    @if($package['version'])
+                                                        <span class="text-muted" style="font-size: 0.75rem;">v{{ $package['version'] }}</span>
+                                                    @endif
                                                 </div>
                                             </div>
                                         </div>
