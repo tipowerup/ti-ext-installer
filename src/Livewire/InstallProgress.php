@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Livewire\Component;
 use Throwable;
-use Tipowerup\Installer\Services\HostingDetector;
 use Tipowerup\Installer\Services\InstallationPipeline;
 
 class InstallProgress extends Component
@@ -34,6 +33,8 @@ class InstallProgress extends Component
     public bool $isCancelled = false;
 
     public ?string $errorMessage = null;
+
+    public ?string $errorDetail = null;
 
     public array $stages = [
         ['key' => 'preparing', 'label' => 'Preparing', 'status' => 'pending'],
@@ -72,10 +73,7 @@ class InstallProgress extends Component
         $this->stages = array_map(fn ($stage): array => array_merge($stage, ['status' => 'pending']), $this->stages);
 
         // Determine installation method
-        $hostingDetector = resolve(HostingDetector::class);
-        $preferredMethod = params('tipowerup_install_method', 'auto');
-
-        $method = $preferredMethod === 'auto' ? $hostingDetector->getRecommendedMethod() : $preferredMethod;
+        $method = params('tipowerup_install_method', 'direct');
 
         // Start installation in background
         $batchId = $this->batchId;
@@ -127,6 +125,10 @@ class InstallProgress extends Component
             $this->hasFailed = true;
             $errorCode = $progress->error_code ?? 'unknown';
             $this->errorMessage = $this->getErrorMessage($errorCode);
+
+            if (!empty($progress->error)) {
+                $this->errorDetail = $progress->error;
+            }
         }
     }
 

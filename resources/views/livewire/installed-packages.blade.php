@@ -130,13 +130,13 @@
                                         wire:loading.attr="disabled"
                                         wire:target="updatePackage('{{ $package['code'] }}')"
                                         class="btn btn-success btn-sm">
+                                    <span wire:loading wire:target="updatePackage('{{ $package['code'] }}')">
+                                        <span class="tipowerup-installer__spinner me-1"></span>
+                                    </span>
                                     <span wire:loading.remove wire:target="updatePackage('{{ $package['code'] }}')">
                                         <i class="fa fa-arrow-up me-1"></i>
-                                        {{ lang('tipowerup.installer::default.action_update') }}
                                     </span>
-                                    <span wire:loading wire:target="updatePackage('{{ $package['code'] }}')">
-                                        <span class="tipowerup-installer__spinner"></span>
-                                    </span>
+                                    {{ lang('tipowerup.installer::default.action_update') }}
                                 </button>
                             </div>
                         @endforeach
@@ -239,13 +239,13 @@
                                                                 wire:loading.attr="disabled"
                                                                 wire:target="updatePackage('{{ $package['code'] }}')"
                                                                 class="btn btn-success btn-sm">
+                                                            <span wire:loading wire:target="updatePackage('{{ $package['code'] }}')">
+                                                                <span class="tipowerup-installer__spinner me-1"></span>
+                                                            </span>
                                                             <span wire:loading.remove wire:target="updatePackage('{{ $package['code'] }}')">
                                                                 <i class="fa fa-arrow-up me-1"></i>
-                                                                {{ lang('tipowerup.installer::default.action_update') }}
                                                             </span>
-                                                            <span wire:loading wire:target="updatePackage('{{ $package['code'] }}')">
-                                                                <span class="tipowerup-installer__spinner"></span>
-                                                            </span>
+                                                            {{ lang('tipowerup.installer::default.action_update') }}
                                                         </button>
                                                     @endif
 
@@ -256,13 +256,13 @@
                                                                     wire:target="disableExtension('{{ $package['code'] }}')"
                                                                     class="btn btn-outline-warning btn-sm"
                                                                     title="{{ lang('tipowerup.installer::default.action_disable') }}">
+                                                                <span wire:loading wire:target="disableExtension('{{ $package['code'] }}')">
+                                                                    <span class="tipowerup-installer__spinner me-1"></span>
+                                                                </span>
                                                                 <span wire:loading.remove wire:target="disableExtension('{{ $package['code'] }}')">
                                                                     <i class="fa fa-pause-circle me-1"></i>
-                                                                    {{ lang('tipowerup.installer::default.action_disable') }}
                                                                 </span>
-                                                                <span wire:loading wire:target="disableExtension('{{ $package['code'] }}')">
-                                                                    <span class="tipowerup-installer__spinner"></span>
-                                                                </span>
+                                                                {{ lang('tipowerup.installer::default.action_disable') }}
                                                             </button>
                                                         @else
                                                             <button wire:click="enableExtension('{{ $package['code'] }}')"
@@ -270,13 +270,13 @@
                                                                     wire:target="enableExtension('{{ $package['code'] }}')"
                                                                     class="btn btn-outline-success btn-sm"
                                                                     title="{{ lang('tipowerup.installer::default.action_enable') }}">
+                                                                <span wire:loading wire:target="enableExtension('{{ $package['code'] }}')">
+                                                                    <span class="tipowerup-installer__spinner me-1"></span>
+                                                                </span>
                                                                 <span wire:loading.remove wire:target="enableExtension('{{ $package['code'] }}')">
                                                                     <i class="fa fa-play-circle me-1"></i>
-                                                                    {{ lang('tipowerup.installer::default.action_enable') }}
                                                                 </span>
-                                                                <span wire:loading wire:target="enableExtension('{{ $package['code'] }}')">
-                                                                    <span class="tipowerup-installer__spinner"></span>
-                                                                </span>
+                                                                {{ lang('tipowerup.installer::default.action_enable') }}
                                                             </button>
                                                         @endif
                                                     @elseif($package['type'] === 'theme' && !$package['is_active'])
@@ -285,13 +285,13 @@
                                                                 wire:target="activateTheme('{{ $package['code'] }}')"
                                                                 class="btn btn-outline-success btn-sm"
                                                                 title="{{ lang('tipowerup.installer::default.action_activate') }}">
+                                                            <span wire:loading wire:target="activateTheme('{{ $package['code'] }}')">
+                                                                <span class="tipowerup-installer__spinner me-1"></span>
+                                                            </span>
                                                             <span wire:loading.remove wire:target="activateTheme('{{ $package['code'] }}')">
                                                                 <i class="fa fa-check-circle me-1"></i>
-                                                                {{ lang('tipowerup.installer::default.action_activate') }}
                                                             </span>
-                                                            <span wire:loading wire:target="activateTheme('{{ $package['code'] }}')">
-                                                                <span class="tipowerup-installer__spinner"></span>
-                                                            </span>
+                                                            {{ lang('tipowerup.installer::default.action_activate') }}
                                                         </button>
                                                     @endif
                                                 </div>
@@ -405,11 +405,11 @@
                                                                 wire:loading.attr="disabled"
                                                                 wire:target="updatePackage('{{ $package['code'] }}')"
                                                                 class="btn btn-success">
-                                                            <span wire:loading.remove wire:target="updatePackage('{{ $package['code'] }}')">
-                                                                <i class="fa fa-arrow-up"></i>
-                                                            </span>
                                                             <span wire:loading wire:target="updatePackage('{{ $package['code'] }}')">
                                                                 <span class="tipowerup-installer__spinner" style="width: 14px; height: 14px; border-width: 2px;"></span>
+                                                            </span>
+                                                            <span wire:loading.remove wire:target="updatePackage('{{ $package['code'] }}')">
+                                                                <i class="fa fa-arrow-up"></i>
                                                             </span>
                                                         </button>
                                                     @endif
@@ -550,13 +550,13 @@
                                                         wire:loading.attr="disabled"
                                                         wire:target="installPackage('{{ $package['code'] }}')"
                                                         class="tipowerup-installer__btn-install btn btn-sm">
+                                                    <span wire:loading wire:target="installPackage('{{ $package['code'] }}')">
+                                                        <span class="tipowerup-installer__spinner me-1"></span>
+                                                    </span>
                                                     <span wire:loading.remove wire:target="installPackage('{{ $package['code'] }}')">
                                                         <i class="fa fa-download me-1"></i>
-                                                        {{ lang('tipowerup.installer::default.action_install') }}
                                                     </span>
-                                                    <span wire:loading wire:target="installPackage('{{ $package['code'] }}')">
-                                                        <span class="tipowerup-installer__spinner"></span>
-                                                    </span>
+                                                    {{ lang('tipowerup.installer::default.action_install') }}
                                                 </button>
 
                                                 <button wire:click="viewDetail('{{ $package['code'] }}')"
@@ -610,13 +610,13 @@
                                                             wire:loading.attr="disabled"
                                                             wire:target="installPackage('{{ $package['code'] }}')"
                                                             class="btn btn-success">
+                                                        <span wire:loading wire:target="installPackage('{{ $package['code'] }}')">
+                                                            <span class="tipowerup-installer__spinner me-1" style="width: 14px; height: 14px; border-width: 2px;"></span>
+                                                        </span>
                                                         <span wire:loading.remove wire:target="installPackage('{{ $package['code'] }}')">
                                                             <i class="fa fa-download me-1"></i>
-                                                            {{ lang('tipowerup.installer::default.action_install') }}
                                                         </span>
-                                                        <span wire:loading wire:target="installPackage('{{ $package['code'] }}')">
-                                                            <span class="tipowerup-installer__spinner" style="width: 14px; height: 14px; border-width: 2px;"></span>
-                                                        </span>
+                                                        {{ lang('tipowerup.installer::default.action_install') }}
                                                     </button>
 
                                                     <button wire:click="viewDetail('{{ $package['code'] }}')"
@@ -660,14 +660,13 @@
                         </button>
                         <button wire:click="executeConfirmedAction"
                                 wire:loading.attr="disabled"
+                                wire:target="executeConfirmedAction"
                                 type="button"
                                 class="btn btn-danger btn-sm">
-                            <span wire:loading.remove wire:target="executeConfirmedAction">
-                                {{ lang('tipowerup.installer::default.action_uninstall') }}
-                            </span>
                             <span wire:loading wire:target="executeConfirmedAction">
-                                <span class="spinner-border spinner-border-sm" role="status"></span>
+                                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
                             </span>
+                            {{ lang('tipowerup.installer::default.action_uninstall') }}
                         </button>
                     </div>
                 </div>

@@ -189,14 +189,12 @@
                                     <div class="d-flex align-items-center justify-content-center">
                                         <i class="fa fa-cog text-primary me-2"></i>
                                         <span class="small">
-                                            <strong>Auto-detected install method:</strong>
-                                            @if($detectedMethod === 'composer')
-                                                Composer Installation
-                                            @else
-                                                Direct Extraction (Shared Hosting)
-                                            @endif
+                                            <strong>Install method:</strong> Direct Extraction
                                         </span>
                                     </div>
+                                    <p class="text-muted text-center small mb-0 mt-1">
+                                        You can change this in Settings.
+                                    </p>
                                 </div>
 
                                 <div class="d-flex flex-column gap-2">

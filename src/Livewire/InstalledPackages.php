@@ -162,6 +162,9 @@ class InstalledPackages extends Component
 
             // Read composer package name for API matching
             $composerPath = $extensionRoot.'/composer.json';
+            if (!file_exists($composerPath)) {
+                continue;
+            }
             $contents = file_get_contents($composerPath);
             $composerData = json_decode($contents, true);
             $composerName = $composerData['name'];
@@ -194,21 +197,16 @@ class InstalledPackages extends Component
             }
 
             $themePath = $themeManager->findPath($code);
-            $themeVersion = '0.0.0';
-            $themeIcon = $this->getDefaultIcon('theme');
-
-            if ($themePath !== null) {
-                $themeComposerPath = $themePath.'/composer.json';
-                $contents = file_get_contents($themeComposerPath);
-                $themeComposer = json_decode($contents, true);
-                $composerName = $themeComposer['name'];
-
-                if (isset($composerVersions[$composerName])) {
-                    $themeVersion = $composerVersions[$composerName];
-                }
-
-                $themeIcon = $this->normalizeIcon($theme->icon ?? null, $themePath, 'theme');
+            if ($themePath === null || !file_exists($themePath.'/composer.json')) {
+                continue;
             }
+
+            $contents = file_get_contents($themePath.'/composer.json');
+            $themeComposer = json_decode($contents, true);
+            $composerName = $themeComposer['name'];
+
+            $themeVersion = $composerVersions[$composerName] ?? '0.0.0';
+            $themeIcon = $this->normalizeIcon($theme->icon ?? null, $themePath, 'theme');
 
             $editUrl = admin_url('themes/source/'.$code);
             $customizeUrl = null;
@@ -390,11 +388,13 @@ class InstalledPackages extends Component
             $extensionCode = $this->resolveExtensionCode($code);
             $extensionManager = resolve(ExtensionManager::class);
             $extensionManager->updateInstalledExtensions($extensionCode, true);
-            $this->loadPackages();
+            $this->setPackageActive($code, true);
 
-            $this->showToast('success', lang('tipowerup.installer::default.success_extension_enabled', [
+            flash()->success(lang('tipowerup.installer::default.success_extension_enabled', [
                 'package' => $name,
             ]));
+
+            $this->redirect(request()->header('Referer', '/'), navigate: false);
         } catch (Throwable $e) {
             $this->errorMessage = $e->getMessage();
         }
@@ -407,11 +407,13 @@ class InstalledPackages extends Component
             $extensionCode = $this->resolveExtensionCode($code);
             $extensionManager = resolve(ExtensionManager::class);
             $extensionManager->updateInstalledExtensions($extensionCode, false);
-            $this->loadPackages();
+            $this->setPackageActive($code, false);
 
-            $this->showToast('success', lang('tipowerup.installer::default.success_extension_disabled', [
+            flash()->success(lang('tipowerup.installer::default.success_extension_disabled', [
                 'package' => $name,
             ]));
+
+            $this->redirect(request()->header('Referer', '/'), navigate: false);
         } catch (Throwable $e) {
             $this->errorMessage = $e->getMessage();
         }
@@ -424,7 +426,7 @@ class InstalledPackages extends Component
             $themeCode = $this->resolveThemeCode($code);
             Theme::activateTheme($themeCode);
             Theme::clearDefaultModel();
-            $this->loadPackages();
+            $this->setPackageActive($code, true);
 
             $this->showToast('success', lang('tipowerup.installer::default.success_theme_activated', [
                 'package' => $name,
@@ -434,9 +436,24 @@ class InstalledPackages extends Component
         }
     }
 
+    /**
+     * Update the is_active flag locally without re-fetching from API.
+     */
+    private function setPackageActive(string $code, bool $active): void
+    {
+        foreach ($this->installedPackages as &$package) {
+            if ($package['code'] === $code) {
+                $package['is_active'] = $active;
+
+                break;
+            }
+        }
+    }
+
     public function viewDetail(string $packageCode): void
     {
         $localData = $this->buildLocalPackageData($packageCode);
+        unset($localData['local']);
         $this->dispatch('view-package-detail', packageCode: $packageCode, packageData: $localData)
             ->to(InstallerMain::class);
     }

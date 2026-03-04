@@ -7,14 +7,18 @@ namespace Tipowerup\Installer\Services;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
-use InvalidArgumentException;
 use Throwable;
 use Tipowerup\Installer\Exceptions\BackupRestoreException;
 use Tipowerup\Installer\Models\License;
+use Tipowerup\Installer\Services\Concerns\ClearsInstallerCaches;
+use Tipowerup\Installer\Services\Concerns\ValidatesPackageCode;
 use ZipArchive;
 
 class BackupManager
 {
+    use ClearsInstallerCaches;
+    use ValidatesPackageCode;
+
     private const string BACKUP_BASE_PATH = 'app/tipowerup/backups';
 
     /**
@@ -225,15 +229,6 @@ class BackupManager
         return explode('/', $packageCode, 2);
     }
 
-    private function validatePackageCode(string $packageCode): void
-    {
-        if (!preg_match('/^[a-z][a-z0-9-]*\/[a-z][a-z0-9-]*$/i', $packageCode)) {
-            throw new InvalidArgumentException(
-                sprintf("Invalid package code format: '%s'", $packageCode)
-            );
-        }
-    }
-
     /**
      * Get the backup directory path for a package.
      */
@@ -389,24 +384,5 @@ class BackupManager
         Log::info(sprintf("Migration state restored for '%s'", $packageCode), [
             'migrations_count' => count($savedState),
         ]);
-    }
-
-    /**
-     * Clear application caches.
-     */
-    private function clearCaches(): void
-    {
-        try {
-            if (function_exists('artisan')) {
-                artisan('cache:clear');
-                artisan('config:clear');
-                artisan('route:clear');
-                artisan('view:clear');
-            }
-        } catch (Throwable $e) {
-            Log::warning('Failed to clear caches after restore', [
-                'error' => $e->getMessage(),
-            ]);
-        }
     }
 }

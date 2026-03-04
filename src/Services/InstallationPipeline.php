@@ -6,7 +6,6 @@ namespace Tipowerup\Installer\Services;
 
 use DateTime;
 use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -18,9 +17,14 @@ use Tipowerup\Installer\Exceptions\LicenseValidationException;
 use Tipowerup\Installer\Exceptions\PackageInstallationException;
 use Tipowerup\Installer\Models\InstallLog;
 use Tipowerup\Installer\Models\License;
+use Tipowerup\Installer\Services\Concerns\ClearsInstallerCaches;
+use Tipowerup\Installer\Services\Concerns\ValidatesPackageCode;
 
 class InstallationPipeline
 {
+    use ClearsInstallerCaches;
+    use ValidatesPackageCode;
+
     private string $currentStage = 'preparing';
 
     public function __construct(
@@ -471,18 +475,6 @@ class InstallationPipeline
     }
 
     /**
-     * Validate package code format.
-     */
-    private function validatePackageCode(string $packageCode): void
-    {
-        if (!preg_match('/^[a-z][a-z0-9-]*\/[a-z][a-z0-9-]*$/i', $packageCode)) {
-            throw new InvalidArgumentException(
-                sprintf("Invalid package code format: '%s'", $packageCode)
-            );
-        }
-    }
-
-    /**
      * Check if the package files exist on disk (extensions or vendor directory).
      */
     private function packageExistsOnDisk(string $packageCode): bool
@@ -542,6 +534,7 @@ class InstallationPipeline
         return match (true) {
             str_contains($message, 'cancelled') => 'cancelled',
             str_contains($message, 'checksum') => 'checksum_mismatch',
+            str_contains($message, 'invalid package structure') => 'invalid_structure',
             str_contains($message, 'download') => 'download_failed',
             str_contains($message, 'extract') => 'extraction_failed',
             str_contains($message, 'migration') => 'migration_failed',
@@ -623,19 +616,5 @@ class InstallationPipeline
             'error_message' => $errorMessage,
             'duration_seconds' => (int) (microtime(true) - $startTime),
         ]);
-    }
-
-    private function clearCaches(): void
-    {
-        try {
-            Artisan::call('cache:clear');
-            Artisan::call('config:clear');
-            Artisan::call('route:clear');
-            Artisan::call('view:clear');
-        } catch (Throwable $e) {
-            Log::warning('Failed to clear caches', [
-                'error' => $e->getMessage(),
-            ]);
-        }
     }
 }

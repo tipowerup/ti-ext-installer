@@ -18,7 +18,7 @@ class SettingsPanel extends Component
 
     public string $newApiKey = '';
 
-    public string $installMethod = 'auto';
+    public string $installMethod = 'direct';
 
     public array $environmentInfo = [];
 
@@ -45,7 +45,7 @@ class SettingsPanel extends Component
         }
 
         // Load install method preference
-        $this->installMethod = params('tipowerup_install_method', 'auto');
+        $this->installMethod = params('tipowerup_install_method', 'direct');
     }
 
     public function loadEnvironmentInfo(): void
@@ -62,7 +62,7 @@ class SettingsPanel extends Component
 
         try {
             // Validate install method
-            if (!in_array($this->installMethod, ['auto', 'direct', 'composer'], true)) {
+            if (!in_array($this->installMethod, ['direct', 'composer'], true)) {
                 $this->errorMessage = lang('tipowerup.installer::default.error_invalid_install_method');
 
                 return;

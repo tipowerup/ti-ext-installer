@@ -72,6 +72,9 @@
             <i class="fa fa-exclamation-triangle me-2"></i>
             <strong>{{ lang('tipowerup.installer::default.progress_stage_failed') }}</strong>
             <p class="mb-0 mt-2 small">{{ $errorMessage }}</p>
+            @if($errorDetail)
+                <p class="mb-0 mt-1 small text-muted font-monospace">{{ $errorDetail }}</p>
+            @endif
             @if(!$isCancelled)
                 <p class="mb-0 mt-2 small text-muted">
                     {{ lang('tipowerup.installer::default.progress_error_help_logs') }}
@@ -91,11 +94,13 @@
     {{-- Action Buttons --}}
     <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
         @if($isCompleted)
-            <button wire:click="closeProgress" type="button" class="btn btn-primary">
+            <button wire:click="closeProgress" wire:loading.attr="disabled" type="button" class="btn btn-primary">
+                <span wire:loading wire:target="closeProgress"><i class="fa fa-spinner fa-spin me-1"></i></span>
                 {{ lang('tipowerup.installer::default.progress_close') }}
             </button>
         @elseif($hasFailed)
-            <button wire:click="closeProgress" type="button" class="btn btn-secondary">
+            <button wire:click="closeProgress" wire:loading.attr="disabled" type="button" class="btn btn-secondary">
+                <span wire:loading wire:target="closeProgress"><i class="fa fa-spinner fa-spin me-1"></i></span>
                 {{ lang('tipowerup.installer::default.progress_close') }}
             </button>
             @if(!$isCancelled)

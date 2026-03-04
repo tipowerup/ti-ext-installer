@@ -4,25 +4,33 @@ declare(strict_types=1);
 
 namespace Tipowerup\Installer\Services;
 
-use Igniter\Main\Classes\ThemeManager;
+use Igniter\Main\Models\Theme;
 use Igniter\System\Classes\ExtensionManager;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
-use InvalidArgumentException;
 use Symfony\Component\Process\Process;
 use Throwable;
 use Tipowerup\Installer\Exceptions\PackageInstallationException;
+use Tipowerup\Installer\Services\Concerns\ClearsInstallerCaches;
+use Tipowerup\Installer\Services\Concerns\RegistersWithTI;
+use Tipowerup\Installer\Services\Concerns\ValidatesPackageCode;
 
 class ComposerInstaller
 {
-    // TODO: CHANGE BEFORE DEPLOYMENT
-    private const string REPO_URL = 'https://tipowerup.test/api/v1/composer';
-    // private const string REPO_URL = 'https://packages.tipowerup.com';
+    use ClearsInstallerCaches;
+    use RegistersWithTI;
+    use ValidatesPackageCode;
+
+    private const string DEFAULT_REPO_URL = 'https://packages.tipowerup.com';
 
     private const int TIMEOUT_SECONDS = 600;
 
     private ?string $authToken = null;
+
+    private function repoUrl(): string
+    {
+        return env('TIPOWERUP_COMPOSER_REPO_URL', self::DEFAULT_REPO_URL);
+    }
 
     /**
      * Install a package via Composer.
@@ -180,60 +188,78 @@ class ComposerInstaller
     }
 
     /**
-     * Uninstall a package via Composer.
+     * Uninstall a package using direct PHP file operations instead of `composer remove`.
      */
     public function uninstall(string $packageCode): void
     {
         $this->validatePackageCode($packageCode);
 
         try {
-            Log::info('ComposerInstaller: Starting uninstall', [
+            Log::info('ComposerInstaller: Starting fast uninstall', [
                 'package_code' => $packageCode,
             ]);
 
-            // Determine package type before uninstall
             $vendorPath = base_path('vendor/'.$packageCode);
-            $packageType = File::exists($vendorPath.'/Extension.php') ? 'extension' : 'theme';
+            $isExtension = File::exists($vendorPath.'/Extension.php');
 
-            // Unregister from TI before removal
-            if ($packageType === 'extension') {
-                try {
-                    $extensionManager = resolve(ExtensionManager::class);
-                    $extensionManager->uninstallExtension($packageCode);
-                } catch (Throwable $e) {
-                    Log::warning('Failed to unregister extension', [
-                        'package_code' => $packageCode,
-                        'error' => $e->getMessage(),
-                    ]);
+            // Step 1: Resolve TI code before deleting files
+            // Step 2: Unregister from TI using correct TI code
+            if ($isExtension) {
+                $extensionCode = $this->resolveExtensionCode($vendorPath);
+                if ($extensionCode !== '') {
+                    try {
+                        $extensionManager = resolve(ExtensionManager::class);
+                        $extensionManager->uninstallExtension($extensionCode);
+                    } catch (Throwable $e) {
+                        Log::warning('ComposerInstaller: Failed to unregister extension', [
+                            'package_code' => $packageCode,
+                            'extension_code' => $extensionCode,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
                 }
             } else {
-                try {
-                    $themeManager = resolve(ThemeManager::class);
-                    $themeManager->deleteTheme($packageCode);
-                } catch (Throwable $e) {
-                    Log::warning('Failed to unregister theme', [
-                        'package_code' => $packageCode,
-                        'error' => $e->getMessage(),
-                    ]);
+                // Read theme code from package's composer.json extra field
+                $pkgComposerPath = $vendorPath.'/composer.json';
+                if (File::exists($pkgComposerPath)) {
+                    $pkgComposer = json_decode(file_get_contents($pkgComposerPath), true);
+                    $themeCode = $pkgComposer['extra']['tastyigniter-theme']['code'] ?? null;
+                    if ($themeCode !== null) {
+                        try {
+                            // Don't call ThemeManager::deleteTheme() — it spawns composer remove
+                            Theme::where('code', $themeCode)->delete();
+                        } catch (Throwable $e) {
+                            Log::warning('ComposerInstaller: Failed to unregister theme', [
+                                'package_code' => $packageCode,
+                                'theme_code' => $themeCode,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+                    }
                 }
             }
 
-            // Remove package via Composer
-            $output = $this->runComposer([
-                'remove',
-                $packageCode,
-                '--no-interaction',
-                '--no-progress',
-            ]);
+            // Step 3: Remove from composer.json
+            $this->removeFromComposerJson($packageCode);
 
-            Log::debug('ComposerInstaller: Composer output', [
-                'output' => $output,
-            ]);
+            // Step 4: Remove from composer.lock
+            $this->removeFromComposerLock($packageCode);
 
-            // Clear caches
+            // Step 5: Remove from vendor/composer/installed.json
+            $this->removeFromInstalledJson($packageCode);
+
+            // Step 6: Delete vendor directory
+            if (File::exists($vendorPath)) {
+                File::deleteDirectory($vendorPath);
+            }
+
+            // Step 7: Regenerate autoload (fast — no dependency resolution)
+            $this->runComposer(['dump-autoload', '--optimize', '--no-interaction']);
+
+            // Step 8: Clear caches
             $this->clearCaches();
 
-            Log::info('ComposerInstaller: Uninstall successful', [
+            Log::info('ComposerInstaller: Fast uninstall successful', [
                 'package_code' => $packageCode,
             ]);
 
@@ -294,7 +320,7 @@ class ComposerInstaller
 
         // Check if repository already exists
         foreach ($composerData['repositories'] ?? [] as $repo) {
-            if (($repo['url'] ?? '') === self::REPO_URL) {
+            if (($repo['url'] ?? '') === $this->repoUrl()) {
                 return;
             }
         }
@@ -304,7 +330,7 @@ class ComposerInstaller
             'config',
             'repositories.tipowerup',
             'composer',
-            self::REPO_URL,
+            $this->repoUrl(),
             '--no-interaction',
         ]);
 
@@ -327,7 +353,7 @@ class ComposerInstaller
         if ($this->authToken !== null) {
             $env['COMPOSER_AUTH'] = json_encode([
                 'bearer' => [
-                    parse_url(self::REPO_URL, PHP_URL_HOST) => $this->authToken,
+                    parse_url($this->repoUrl(), PHP_URL_HOST) => $this->authToken,
                 ],
             ]);
         }
@@ -347,10 +373,12 @@ class ComposerInstaller
             if ($onProgress !== null) {
                 $process->start();
                 $lastPercent = 0;
+                $stderrLines = [];
 
                 foreach ($process as $type => $data) {
                     if ($type === Process::ERR && trim($data) !== '') {
                         $line = trim($data);
+                        $stderrLines[] = $line;
                         $newPercent = $this->parseComposerProgress($line, $lastPercent);
                         if ($newPercent > $lastPercent) {
                             $lastPercent = $newPercent;
@@ -360,8 +388,16 @@ class ComposerInstaller
                 }
 
                 if (!$process->isSuccessful()) {
+                    $errorOutput = implode(PHP_EOL, $stderrLines);
+                    Log::error('ComposerInstaller: Composer command failed', [
+                        'exit_code' => $process->getExitCode(),
+                        'exit_text' => $process->getExitCodeText(),
+                        'output' => $process->getOutput(),
+                        'error_output' => $errorOutput,
+                    ]);
+
                     throw new PackageInstallationException(
-                        sprintf('Composer command failed: %s%s%s', $process->getExitCodeText(), PHP_EOL, $process->getErrorOutput())
+                        sprintf('Composer command failed: %s%s%s', $process->getExitCodeText(), PHP_EOL, $errorOutput)
                     );
                 }
             } else {
@@ -420,36 +456,6 @@ class ComposerInstaller
     }
 
     /**
-     * Register package with TastyIgniter.
-     */
-    private function registerWithTI(string $packageCode, string $type, string $path): void
-    {
-        try {
-            if ($type === 'extension') {
-                $extensionManager = resolve(ExtensionManager::class);
-                $extension = $extensionManager->loadExtension($path);
-                $extensionCode = $extensionManager->getIdentifier(
-                    (new \ReflectionClass($extension))->getNamespaceName()
-                );
-                if ($extensionCode === false || $extensionCode === '') {
-                    throw new PackageInstallationException(
-                        'Failed to determine extension code after loading: '.$packageCode
-                    );
-                }
-                $extensionManager->installExtension($extensionCode);
-            } else {
-                $themeManager = resolve(ThemeManager::class);
-                $themeManager->loadTheme($path);
-                $themeManager->installTheme($packageCode);
-            }
-        } catch (Throwable $e) {
-            throw new PackageInstallationException(
-                'Failed to register with TastyIgniter: '.$e->getMessage()
-            );
-        }
-    }
-
-    /**
      * Run migrations for extension.
      */
     public function runMigrations(string $packageCode): void
@@ -479,22 +485,6 @@ class ComposerInstaller
         }
     }
 
-    private function resolveExtensionCode(string $vendorPath): string
-    {
-        $extensionManager = resolve(ExtensionManager::class);
-        $extension = $extensionManager->loadExtension($vendorPath);
-
-        if ($extension === null) {
-            return '';
-        }
-
-        $code = $extensionManager->getIdentifier(
-            (new \ReflectionClass($extension))->getNamespaceName()
-        );
-
-        return ($code !== false && $code !== '') ? $code : '';
-    }
-
     private function parseComposerProgress(string $line, int $lastPercent): int
     {
         return match (true) {
@@ -514,33 +504,76 @@ class ComposerInstaller
     }
 
     /**
-     * Validate package code format.
+     * Remove a package from composer.json require/require-dev.
      */
-    private function validatePackageCode(string $packageCode): void
+    private function removeFromComposerJson(string $packageCode): void
     {
-        if (!preg_match('/^[a-z][a-z0-9-]*\/[a-z][a-z0-9-]*$/i', $packageCode)) {
-            throw new InvalidArgumentException(
-                sprintf("Invalid package code format: '%s'", $packageCode)
-            );
+        $path = base_path('composer.json');
+        $data = json_decode(file_get_contents($path), true);
+
+        $changed = false;
+
+        if (isset($data['require'][$packageCode])) {
+            unset($data['require'][$packageCode]);
+            $changed = true;
+        }
+
+        if (isset($data['require-dev'][$packageCode])) {
+            unset($data['require-dev'][$packageCode]);
+            $changed = true;
+        }
+
+        if ($changed) {
+            file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n");
         }
     }
 
     /**
-     * Clear application caches.
+     * Remove a package from composer.lock.
      */
-    private function clearCaches(): void
+    private function removeFromComposerLock(string $packageCode): void
     {
-        try {
-            Artisan::call('cache:clear');
-            Artisan::call('view:clear');
+        $path = base_path('composer.lock');
 
-            if (function_exists('opcache_reset')) {
-                opcache_reset();
-            }
-        } catch (Throwable $e) {
-            Log::warning('Failed to clear caches', [
-                'error' => $e->getMessage(),
-            ]);
+        if (!File::exists($path)) {
+            return;
         }
+
+        $data = json_decode(file_get_contents($path), true);
+
+        if ($data === null) {
+            return;
+        }
+
+        $filter = fn (array $pkg): bool => ($pkg['name'] ?? '') !== $packageCode;
+
+        $data['packages'] = array_values(array_filter($data['packages'] ?? [], $filter));
+        $data['packages-dev'] = array_values(array_filter($data['packages-dev'] ?? [], $filter));
+
+        file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n");
+    }
+
+    /**
+     * Remove a package from vendor/composer/installed.json.
+     */
+    private function removeFromInstalledJson(string $packageCode): void
+    {
+        $path = base_path('vendor/composer/installed.json');
+
+        if (!File::exists($path)) {
+            return;
+        }
+
+        $data = json_decode(file_get_contents($path), true);
+
+        if ($data === null) {
+            return;
+        }
+
+        $data['packages'] = array_values(
+            array_filter($data['packages'] ?? [], fn (array $pkg): bool => ($pkg['name'] ?? '') !== $packageCode)
+        );
+
+        file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n");
     }
 }

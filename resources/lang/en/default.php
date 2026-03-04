@@ -130,6 +130,7 @@ return [
     'progress_error_checksum_mismatch' => 'Downloaded file appears corrupted. Please try again.',
     'progress_error_download_failed' => 'Could not download the PowerUp. Check your internet connection.',
     'progress_error_extraction_failed' => 'Failed to extract files. Check available disk space.',
+    'progress_error_invalid_structure' => 'The downloaded package has an invalid structure. Please contact support.',
     'progress_error_migration_failed' => 'Database migration failed. Previous version has been restored.',
     'progress_error_composer_failed' => 'Composer installation failed. Try switching to Direct Extraction in Settings.',
     'progress_error_registration_failed' => 'Installed but could not register with TastyIgniter. Try again.',
@@ -160,11 +161,12 @@ return [
     'settings_api_key' => 'PowerUp Key',
     'settings_api_key_placeholder' => 'Enter your PowerUp key',
     'settings_install_method' => 'Installation Method',
-    'settings_method_auto' => 'Auto-Detect (Recommended)',
-    'settings_method_direct' => 'Direct Extraction',
+    'settings_method_direct' => 'Direct Extraction (Recommended)',
     'settings_method_composer' => 'Composer',
+    'settings_method_composer_warning' => 'Only use Composer if your codebase is not rebuilt or redeployed frequently.',
     'settings_environment' => 'Environment Info',
     'settings_save' => 'Save Settings',
+    'settings_install_method_help' => 'Learn more about installation methods in the <a href=":url" target="_blank">documentation</a>.',
     'settings_saved' => 'Settings saved successfully.',
 
     // Composer Phar

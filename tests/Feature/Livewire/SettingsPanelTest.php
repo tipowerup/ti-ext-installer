@@ -44,7 +44,7 @@ it('mounts with current settings loaded and empty api key when none stored', fun
 
     Livewire::test(SettingsPanel::class)
         ->assertSet('apiKey', '')
-        ->assertSet('installMethod', 'auto')
+        ->assertSet('installMethod', 'direct')
         ->assertSet('showApiKeyInput', false)
         ->assertSet('isSaving', false)
         ->assertSet('successMessage', null)
@@ -75,7 +75,7 @@ it('mounts with install method from stored settings', function (): void {
     Livewire::test(SettingsPanel::class)
         ->assertSet('installMethod', 'composer');
 })->afterEach(function (): void {
-    Settings::setPref('tipowerup_install_method', 'auto');
+    Settings::setPref('tipowerup_install_method', 'direct');
 });
 
 it('saveSettings with valid install method saves to db and shows success message', function (): void {
@@ -96,7 +96,7 @@ it('saveSettings with valid install method saves to db and shows success message
 
     expect($component->get('successMessage'))->not->toBeNull()->not->toBeEmpty();
 })->afterEach(function (): void {
-    Settings::setPref('tipowerup_install_method', 'auto');
+    Settings::setPref('tipowerup_install_method', 'direct');
 });
 
 it('changeApiKey with valid new key verifies, saves to db, masks display, hides input, and shows success', function (): void {
@@ -168,7 +168,7 @@ it('closePanel dispatches settings-closed event', function (): void {
 it('saveSettings with invalid install method shows error and does not persist', function (): void {
     mockSettingsHostingDetector();
 
-    Settings::setPref('tipowerup_install_method', 'auto');
+    Settings::setPref('tipowerup_install_method', 'direct');
 
     $component = Livewire::test(SettingsPanel::class)
         ->set('installMethod', 'invalid-method')
@@ -181,7 +181,7 @@ it('saveSettings with invalid install method shows error and does not persist', 
     // Original value must not have been overwritten
     expect(Settings::getPref('tipowerup_install_method'))->not->toBe('invalid-method');
 })->afterEach(function (): void {
-    Settings::setPref('tipowerup_install_method', 'auto');
+    Settings::setPref('tipowerup_install_method', 'direct');
 });
 
 it('changeApiKey with empty new key shows error and does not call the api', function (): void {
@@ -246,7 +246,7 @@ it('settings are persisted via Settings::setPref not params()->set — verifies 
     expect(Settings::getPref('tipowerup_install_method'))->toBe('composer');
     expect(Settings::getPref('tipowerup_api_key'))->toBe('regression-key-9999');
 })->afterEach(function (): void {
-    Settings::setPref('tipowerup_install_method', 'auto');
+    Settings::setPref('tipowerup_install_method', 'direct');
     Settings::setPref('tipowerup_api_key', '');
 });
 

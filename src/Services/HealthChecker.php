@@ -104,7 +104,7 @@ class HealthChecker
         // Composer Writable Check
         $unwritablePaths = $this->hostingDetector->getUnwritableComposerPaths();
         $composerWritable = $unwritablePaths === [];
-        $currentInstallMethod = params('tipowerup_install_method', 'auto');
+        $currentInstallMethod = params('tipowerup_install_method', 'direct');
         $composerWritableCritical = $currentInstallMethod === 'composer';
 
         $composerWritableFix = null;

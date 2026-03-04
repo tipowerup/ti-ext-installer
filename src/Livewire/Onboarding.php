@@ -33,8 +33,6 @@ class Onboarding extends Component
 
     public ?string $errorMessage = null;
 
-    public ?string $detectedMethod = null;
-
     #[Computed]
     public function logoDataUri(): string
     {
@@ -79,7 +77,6 @@ class Onboarding extends Component
             $hostingDetector->clearCache();
         }
 
-        $this->detectedMethod = $hostingDetector->getRecommendedMethod();
     }
 
     public function canProceedFromHealth(): bool

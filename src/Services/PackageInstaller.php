@@ -7,14 +7,16 @@ namespace Tipowerup\Installer\Services;
 use DateTime;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
-use InvalidArgumentException;
 use Throwable;
 use Tipowerup\Installer\Exceptions\PackageInstallationException;
 use Tipowerup\Installer\Models\InstallLog;
 use Tipowerup\Installer\Models\License;
+use Tipowerup\Installer\Services\Concerns\ValidatesPackageCode;
 
 class PackageInstaller
 {
+    use ValidatesPackageCode;
+
     public function __construct(
         private readonly HostingDetector $hostingDetector,
         private readonly DirectInstaller $directInstaller,
@@ -335,24 +337,22 @@ class PackageInstaller
         }
 
         // Fall back to filesystem detection
-        $shortName = $this->getShortName($packageCode);
-        $vendorName = $this->getVendorName($packageCode);
+        [$vendor, $name] = explode('/', $packageCode, 2);
 
         // Check storage extensions directory (direct installation)
-        $extensionPath = storage_path('app/tipowerup/extensions/'.$vendorName.'/'.$shortName);
+        $extensionPath = storage_path('app/tipowerup/extensions/'.$vendor.'/'.$name);
         if (File::exists($extensionPath)) {
             return 'direct';
         }
 
         // Check storage themes directory (direct installation)
-        $themePath = storage_path('app/tipowerup/themes/'.$vendorName.'-'.$shortName);
+        $themePath = storage_path('app/tipowerup/themes/'.$vendor.'-'.$name);
         if (File::exists($themePath)) {
             return 'direct';
         }
 
         // Check vendor directory (Composer installation)
-        $composerPackageName = $this->getComposerPackageName($packageCode);
-        $vendorPath = base_path('vendor/'.$composerPackageName);
+        $vendorPath = base_path('vendor/'.$packageCode);
         if (File::exists($vendorPath)) {
             return 'composer';
         }
@@ -398,45 +398,5 @@ class PackageInstaller
 
             throw $e;
         }
-    }
-
-    /**
-     * Validate package code format.
-     */
-    private function validatePackageCode(string $packageCode): void
-    {
-        if (!preg_match('/^[a-z][a-z0-9]*\.[a-z][a-z0-9]*$/i', $packageCode)) {
-            throw new InvalidArgumentException(
-                sprintf("Invalid package code format: '%s'", $packageCode)
-            );
-        }
-    }
-
-    /**
-     * Extract short name from package code.
-     */
-    private function getShortName(string $packageCode): string
-    {
-        $parts = explode('.', $packageCode);
-
-        return end($parts);
-    }
-
-    /**
-     * Extract vendor name from package code.
-     */
-    private function getVendorName(string $packageCode): string
-    {
-        $parts = explode('.', $packageCode);
-
-        return $parts[0];
-    }
-
-    /**
-     * Convert package code to Composer package name.
-     */
-    private function getComposerPackageName(string $packageCode): string
-    {
-        return str_replace('.', '/', $packageCode);
     }
 }

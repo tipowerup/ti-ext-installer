@@ -53,18 +53,18 @@
     {{-- Installation Method Section --}}
     <div class="mb-4">
         <label class="form-label">{{ lang('tipowerup.installer::default.settings_install_method') }}</label>
-        <select wire:model.defer="installMethod" class="form-select">
-            <option value="auto">{{ lang('tipowerup.installer::default.settings_method_auto') }}</option>
+        <select wire:model.live="installMethod" class="form-select">
             <option value="direct">{{ lang('tipowerup.installer::default.settings_method_direct') }}</option>
             <option value="composer">{{ lang('tipowerup.installer::default.settings_method_composer') }}</option>
         </select>
+        @if($installMethod === 'composer')
+            <small class="form-text text-warning">
+                <i class="fa fa-exclamation-triangle me-1"></i>
+                {{ lang('tipowerup.installer::default.settings_method_composer_warning') }}
+            </small>
+        @endif
         <small class="form-text text-muted">
-            Based on your environment,
-            @if($environmentInfo['recommended_method'] === 'composer')
-                <strong>Composer installation</strong> is recommended.
-            @else
-                <strong>Direct extraction</strong> is recommended.
-            @endif
+            {!! lang('tipowerup.installer::default.settings_install_method_help', ['url' => 'https://tipowerup.com/docs/choosing-installation-method']) !!}
         </small>
     </div>
 

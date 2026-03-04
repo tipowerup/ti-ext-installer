@@ -8,7 +8,7 @@ use Tipowerup\Installer\Services\HostingDetector;
 use Tipowerup\Installer\Services\PackageInstaller;
 use Tipowerup\Installer\Services\PowerUpApiClient;
 
-it('extracts short name from package code correctly', function (): void {
+it('validates composer package code format correctly', function (): void {
     $hostingDetector = new HostingDetector;
 
     $apiClient = new class extends PowerUpApiClient
@@ -44,38 +44,32 @@ it('extracts short name from package code correctly', function (): void {
 
     // Use reflection to test private method
     $reflection = new ReflectionClass($installer);
-    $method = $reflection->getMethod('getShortName');
+    $method = $reflection->getMethod('validatePackageCode');
 
-    expect($method->invoke($installer, 'tipowerup.loyaltypoints'))->toBe('loyaltypoints');
-    expect($method->invoke($installer, 'vendor.package'))->toBe('package');
-    expect($method->invoke($installer, 'single'))->toBe('single');
+    // Valid composer-format codes should not throw
+    $method->invoke($installer, 'tipowerup/ti-ext-darkmode');
+    $method->invoke($installer, 'vendor/package');
+    $method->invoke($installer, 'tipowerup/ti-ext-loyalty-points');
+
+    expect(true)->toBeTrue(); // Reached here = no exception
 });
 
-it('converts package code to composer package name correctly', function (): void {
+it('rejects invalid package code formats', function (): void {
     $hostingDetector = new HostingDetector;
 
     $apiClient = new class extends PowerUpApiClient
     {
-        public function __construct()
-        {
-            // Skip parent constructor
-        }
+        public function __construct() {}
     };
 
     $directInstaller = new class extends DirectInstaller
     {
-        public function __construct()
-        {
-            // Skip parent constructor
-        }
+        public function __construct() {}
     };
 
     $composerInstaller = new class extends ComposerInstaller
     {
-        public function __construct()
-        {
-            // Skip parent constructor
-        }
+        public function __construct() {}
     };
 
     $installer = new PackageInstaller(
@@ -85,12 +79,20 @@ it('converts package code to composer package name correctly', function (): void
         $apiClient
     );
 
-    // Use reflection to test private method
     $reflection = new ReflectionClass($installer);
-    $method = $reflection->getMethod('getComposerPackageName');
+    $method = $reflection->getMethod('validatePackageCode');
 
-    expect($method->invoke($installer, 'tipowerup.loyaltypoints'))->toBe('tipowerup/loyaltypoints');
-    expect($method->invoke($installer, 'vendor.package'))->toBe('vendor/package');
+    // Dot notation should be rejected
+    expect(fn () => $method->invoke($installer, 'tipowerup.darkmode'))
+        ->toThrow(InvalidArgumentException::class);
+
+    // No separator should be rejected
+    expect(fn () => $method->invoke($installer, 'invalid'))
+        ->toThrow(InvalidArgumentException::class);
+
+    // Empty string should be rejected
+    expect(fn () => $method->invoke($installer, ''))
+        ->toThrow(InvalidArgumentException::class);
 });
 
 // Note: Full installation workflow tests require Laravel application context

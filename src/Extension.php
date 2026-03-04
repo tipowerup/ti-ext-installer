@@ -13,6 +13,7 @@ use Igniter\System\Classes\ExtensionManager;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Override;
 use Throwable;
@@ -168,8 +169,8 @@ class Extension extends BaseExtension
      */
     protected function registerStoragePackages(): void
     {
-        $extensionsPath = storage_path('app/tipowerup/extensions');
-        $themesPath = storage_path('app/tipowerup/themes');
+        $extensionsPath = Storage::disk('local')->path('tipowerup/extensions');
+        $themesPath = Storage::disk('local')->path('tipowerup/themes');
 
         // Register storage-based extensions
         if (File::isDirectory($extensionsPath)) {
@@ -180,7 +181,12 @@ class Extension extends BaseExtension
             // ran loadExtensions() during __construct() before our boot()
             foreach (File::glob($extensionsPath.'/*/*/{extension,composer}.json', GLOB_BRACE) as $configFile) {
                 try {
-                    $extensionManager->loadExtension(dirname($configFile));
+                    $extension = $extensionManager->loadExtension(dirname($configFile));
+
+                    // Register the extension as a service provider so its
+                    // bootingExtension() runs — this registers lang, views,
+                    // resources, and route paths with the application.
+                    app()->register($extension);
                 } catch (Throwable $e) {
                     Log::warning('Failed to load storage extension', [
                         'path' => dirname($configFile),
