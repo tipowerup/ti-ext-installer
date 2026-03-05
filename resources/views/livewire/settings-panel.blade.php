@@ -1,20 +1,18 @@
 <div class="tipowerup-installer__settings-body">
-    {{-- Success/Error Messages --}}
     @if($successMessage)
         <div class="alert alert-success d-flex align-items-center mb-4" role="alert">
-            <i class="fa fa-check-circle me-3" style="font-size: 20px;"></i>
+            <i class="fa fa-check-circle me-3 tipowerup-installer__alert-icon"></i>
             <div>{{ $successMessage }}</div>
         </div>
     @endif
 
     @if($errorMessage)
         <div class="alert alert-danger d-flex align-items-center mb-4" role="alert">
-            <i class="fa fa-exclamation-circle me-3" style="font-size: 20px;"></i>
+            <i class="fa fa-exclamation-circle me-3 tipowerup-installer__alert-icon"></i>
             <div>{{ $errorMessage }}</div>
         </div>
     @endif
 
-    {{-- PowerUp Key Section --}}
     <div class="mb-4">
         <label class="form-label">{{ lang('tipowerup.installer::default.settings_api_key') }}</label>
 
@@ -50,7 +48,6 @@
         @endif
     </div>
 
-    {{-- Installation Method Section --}}
     <div class="mb-4">
         <label class="form-label">{{ lang('tipowerup.installer::default.settings_install_method') }}</label>
         <select wire:model.live="installMethod" class="form-select">
@@ -68,7 +65,6 @@
         </small>
     </div>
 
-    {{-- Save Button --}}
     <div class="mb-4">
         <button wire:click="saveSettings" type="button" class="btn btn-primary w-100"
                 wire:loading.attr="disabled" wire:target="saveSettings">
@@ -83,7 +79,6 @@
         </button>
     </div>
 
-    {{-- Environment Information Section --}}
     <div class="border-top pt-4">
         <div class="d-flex align-items-center justify-content-between mb-3">
             <h6 class="mb-0">{{ lang('tipowerup.installer::default.settings_environment') }}</h6>

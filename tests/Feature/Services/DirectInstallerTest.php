@@ -903,18 +903,18 @@ describe('validateDownloadUrl', function (): void {
             ->toThrow(PackageInstallationException::class);
     });
 
-    it('respects TIPOWERUP_ALLOWED_DOWNLOAD_HOSTS environment override', function (): void {
-        putenv('TIPOWERUP_ALLOWED_DOWNLOAD_HOSTS=my-custom-cdn.example.com');
+    it('respects allowed_download_hosts config override', function (): void {
+        $original = config('tipowerup.installer.allowed_download_hosts');
+        config()->set('tipowerup.installer.allowed_download_hosts', array_merge($original, ['my-custom-cdn.example.com']));
 
         try {
             $installer = makeInstallerWithUrlValidator();
 
-            // Should not throw because the env var adds this host
             $installer->exposedValidateDownloadUrl('https://my-custom-cdn.example.com/package.zip');
 
             expect(true)->toBeTrue();
         } finally {
-            putenv('TIPOWERUP_ALLOWED_DOWNLOAD_HOSTS=');
+            config()->set('tipowerup.installer.allowed_download_hosts', $original);
         }
     });
 });

@@ -157,6 +157,11 @@ class Marketplace extends Component
 
             $extensionRoot = dirname(dirname(File::fromClass(get_class($extension))));
             $composerPath = $extensionRoot.'/composer.json';
+
+            if (!file_exists($composerPath)) {
+                continue;
+            }
+
             $contents = file_get_contents($composerPath);
             $composerData = json_decode($contents, true);
             $codes[] = $composerData['name'];
@@ -170,6 +175,10 @@ class Marketplace extends Component
 
             $themePath = $themeManager->findPath($code);
             if ($themePath === null) {
+                continue;
+            }
+
+            if (!file_exists($themePath.'/composer.json')) {
                 continue;
             }
 

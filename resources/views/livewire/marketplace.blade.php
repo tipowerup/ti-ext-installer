@@ -1,5 +1,4 @@
 <div class="tipowerup-installer__marketplace">
-    {{-- Error Message --}}
     @if($errorMessage)
         <div class="alert alert-danger d-flex align-items-start mb-3" role="alert">
             <i class="fa fa-exclamation-circle me-2 mt-1 flex-shrink-0"></i>
@@ -19,7 +18,6 @@
         </div>
     @endif
 
-    {{-- Toolbar: Search + Filters + View Toggle --}}
     <div class="tipowerup-installer__search-bar">
         <input
             type="text"
@@ -30,7 +28,6 @@
     </div>
 
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-        {{-- Filter Buttons --}}
         <div class="d-flex align-items-center gap-2 flex-wrap">
             <div class="tipowerup-installer__filters">
                 <button
@@ -72,7 +69,6 @@
 
         </div>
 
-        {{-- Refresh + View Mode Toggle --}}
         <div class="d-flex align-items-center gap-2">
             <button
                 wire:click="refreshMarketplace"
@@ -110,39 +106,36 @@
         </div>
     </div>
 
-    {{-- Loading Overlay (shows immediately on filter/search/page change) --}}
     <div wire:loading wire:target="setFilter, loadMarketplace, refreshMarketplace, goToPage" class="tipowerup-installer__loading-overlay">
         <div class="d-flex flex-column align-items-center py-5">
             <div class="spinner-border text-primary mb-3" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>
-            <p class="text-muted mb-0" style="font-size: 0.875rem;">{{ lang('tipowerup.installer::default.marketplace_loading') }}</p>
+            <p class="text-muted mb-0 tipowerup-installer__text-sm">{{ lang('tipowerup.installer::default.marketplace_loading') }}</p>
         </div>
     </div>
 
     <div wire:loading.remove wire:target="setFilter, loadMarketplace, refreshMarketplace, goToPage">
 
-    {{-- Loading State (initial load only) --}}
     @if($isLoading)
         <div class="tipowerup-installer__packages-grid">
             @for($i = 0; $i < 6; $i++)
                 <div class="card tipowerup-installer__package-card">
                     <div class="card-body">
                         <div class="tipowerup-installer__package-header mb-2">
-                            <div class="tipowerup-installer__skeleton" style="width: 44px; height: 44px; border-radius: 0.5rem; flex-shrink: 0;"></div>
+                            <div class="tipowerup-installer__skeleton tipowerup-installer__skeleton--icon"></div>
                             <div class="tipowerup-installer__package-info ms-2">
-                                <div class="tipowerup-installer__skeleton mb-1" style="height: 16px; width: 70%;"></div>
-                                <div class="tipowerup-installer__skeleton" style="height: 13px; width: 40%;"></div>
+                                <div class="tipowerup-installer__skeleton tipowerup-installer__skeleton--text-lg mb-1" style="width: 70%;"></div>
+                                <div class="tipowerup-installer__skeleton tipowerup-installer__skeleton--text-sm" style="width: 40%;"></div>
                             </div>
                         </div>
-                        <div class="tipowerup-installer__skeleton mb-2" style="height: 40px;"></div>
-                        <div class="tipowerup-installer__skeleton" style="height: 32px;"></div>
+                        <div class="tipowerup-installer__skeleton tipowerup-installer__skeleton--block mb-2"></div>
+                        <div class="tipowerup-installer__skeleton tipowerup-installer__skeleton--btn"></div>
                     </div>
                 </div>
             @endfor
         </div>
 
-    {{-- Empty State --}}
     @elseif(count($packages) === 0)
         <div class="tipowerup-installer__empty-state">
             <div class="tipowerup-installer__empty-icon">
@@ -158,7 +151,6 @@
             </p>
         </div>
 
-    {{-- Grid View --}}
     @elseif($viewMode === 'grid')
         <div class="tipowerup-installer__packages-grid tipowerup-installer__tab-content">
             @foreach($packages as $package)
@@ -172,23 +164,20 @@
                 @endphp
                 <div wire:key="package-{{ $package['code'] }}" class="{{ $cardClasses }}">
                     <div class="card-body">
-                        {{-- Package Header: Icon + Name + Type --}}
                         <div class="tipowerup-installer__package-header mb-2">
-                            {{-- Icon rendering --}}
                             @php
                                 $defaultColors = ['extension' => '#3B82F6', 'theme' => '#F97316', 'bundle' => '#8B5CF6'];
                                 $defaultColor = $defaultColors[$package['type'] ?? 'extension'] ?? '#3B82F6';
                             @endphp
                             @if($isBundle)
-                                <div class="tipowerup-installer__package-icon" style="background: #8B5CF6;">
+                                <div class="tipowerup-installer__package-icon tipowerup-installer__package-icon--bundle">
                                     <i class="fa fa-box"></i>
                                 </div>
                             @elseif(is_array($icon) && !empty($icon['url']))
                                 <img
                                     src="{{ $icon['url'] }}"
                                     alt="{{ $package['name'] }}"
-                                    class="tipowerup-installer__package-icon"
-                                    style="object-fit: cover; border-radius: 0.5rem;"
+                                    class="tipowerup-installer__package-icon tipowerup-installer__package-icon--img"
                                 />
                             @elseif(is_array($icon) && !empty($icon['class']))
                                 <div
@@ -212,29 +201,25 @@
                                         {{ ucfirst($package['type']) }}
                                     </span>
                                     @if(isset($package['version']))
-                                        <span class="text-muted" style="font-size: 0.75rem;">v{{ $package['version'] }}</span>
+                                        <span class="text-muted tipowerup-installer__text-xs">v{{ $package['version'] }}</span>
                                     @endif
                                 </div>
                             </div>
 
                         </div>
 
-                        {{-- Description --}}
                         <p class="tipowerup-installer__package-description">
                             {{ \Illuminate\Support\Str::limit($package['description'] ?? '', 90) }}
                         </p>
 
-                        {{-- Bundle: products count --}}
                         @if($isBundle && !empty($package['products_count']) && $package['products_count'] > 0)
-                            <p class="text-muted mb-2" style="font-size: 0.75rem;">
+                            <p class="text-muted mb-2 tipowerup-installer__text-xs">
                                 <i class="fa fa-layer-group me-1"></i>
                                 {{ $package['products_count'] }} {{ $package['products_count'] === 1 ? 'product' : 'products' }} included
                             </p>
                         @endif
 
-                        {{-- Package Footer with Price + Actions --}}
                         <div class="tipowerup-installer__package-footer">
-                            {{-- Price display --}}
                             <div class="d-flex align-items-center gap-2 flex-wrap">
                                 @if(isset($package['price']) && $package['price'] > 0)
                                     <span class="tipowerup-installer__price-current">
@@ -251,11 +236,10 @@
                                         </span>
                                     @endif
                                 @else
-                                    <span class="fw-semibold text-success" style="font-size: 0.875rem;">{{ lang('tipowerup.installer::default.marketplace_free') }}</span>
+                                    <span class="fw-semibold text-success tipowerup-installer__text-sm">{{ lang('tipowerup.installer::default.marketplace_free') }}</span>
                                 @endif
                             </div>
 
-                            {{-- Action Buttons --}}
                             <div class="tipowerup-installer__marketplace-actions">
                                 <button
                                     wire:click="viewDetail('{{ $package['code'] }}')"
@@ -298,18 +282,17 @@
             @endforeach
         </div>
 
-    {{-- List View --}}
     @else
         <div class="tipowerup-installer__marketplace-list table-responsive tipowerup-installer__tab-content">
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th style="width: 48px;"></th>
+                        <th class="tipowerup-installer__table-col--icon"></th>
                         <th>{{ lang('tipowerup.installer::default.marketplace_table_header_name') }}</th>
-                        <th style="width: 90px;">Type</th>
-                        <th style="width: 120px;">Price</th>
-                        <th style="width: 80px;">Version</th>
-                        <th style="width: 200px;" class="text-end">Actions</th>
+                        <th class="tipowerup-installer__table-col--type">Type</th>
+                        <th class="tipowerup-installer__table-col--price">Price</th>
+                        <th class="tipowerup-installer__table-col--version">Version</th>
+                        <th class="tipowerup-installer__table-col--actions text-end">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -319,54 +302,50 @@
                             $icon = $package['icon'] ?? null;
                         @endphp
                         <tr wire:key="pkg-list-{{ $package['code'] }}">
-                            {{-- Icon --}}
                             <td>
                                 @php
                                     $defaultColors = ['extension' => '#3B82F6', 'theme' => '#F97316', 'bundle' => '#8B5CF6'];
                                     $defaultColor = $defaultColors[$package['type'] ?? 'extension'] ?? '#3B82F6';
                                 @endphp
                                 @if($isBundle)
-                                    <div style="width: 36px; height: 36px; border-radius: 0.5rem; background: #8B5CF6; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.875rem;">
+                                    <div class="tipowerup-installer__list-icon tipowerup-installer__list-icon--bundle">
                                         <i class="fa fa-box"></i>
                                     </div>
                                 @elseif(is_array($icon) && !empty($icon['url']))
                                     <img
                                         src="{{ $icon['url'] }}"
                                         alt="{{ $package['name'] }}"
-                                        style="width: 36px; height: 36px; border-radius: 0.5rem; object-fit: cover;"
+                                        class="tipowerup-installer__list-icon tipowerup-installer__list-icon--img"
                                     />
                                 @elseif(is_array($icon) && !empty($icon['class']))
-                                    <div style="width: 36px; height: 36px; border-radius: 0.5rem; background: {{ $icon['background_color'] ?? $defaultColor }}; color: {{ $icon['color'] ?? '#fff' }}; display: flex; align-items: center; justify-content: center; font-size: 0.875rem;">
+                                    <div class="tipowerup-installer__list-icon tipowerup-installer__list-icon--custom" style="background: {{ $icon['background_color'] ?? $defaultColor }}; color: {{ $icon['color'] ?? '#fff' }};">
                                         <i class="{{ $icon['class'] }}"></i>
                                     </div>
                                 @else
-                                    <div style="width: 36px; height: 36px; border-radius: 0.5rem; background: {{ $defaultColor }}; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.75rem; font-weight: 700;">
+                                    <div class="tipowerup-installer__list-icon tipowerup-installer__list-icon--text" style="background: {{ $defaultColor }};">
                                         {{ strtoupper(substr($package['name'], 0, 2)) }}
                                     </div>
                                 @endif
                             </td>
-                            {{-- Name & Description --}}
                             <td>
-                                <div class="d-flex align-items-center gap-2" style="font-size: 0.875rem;">
+                                <div class="d-flex align-items-center gap-2 tipowerup-installer__text-sm">
                                     <span class="fw-semibold">{{ $package['name'] }}</span>
                                 </div>
                                 @if(isset($package['description']))
-                                    <div class="text-muted" style="font-size: 0.75rem; line-height: 1.3;">
+                                    <div class="text-muted tipowerup-installer__list-description">
                                         {{ \Illuminate\Support\Str::limit($package['description'], 70) }}
                                     </div>
                                 @endif
                             </td>
-                            {{-- Type --}}
                             <td>
                                 <span class="tipowerup-installer__badge tipowerup-installer__badge--{{ $package['type'] === 'theme' ? 'theme' : ($isBundle ? 'bundle' : 'extension') }}">
                                     {{ ucfirst($package['type']) }}
                                 </span>
                             </td>
-                            {{-- Price --}}
                             <td>
                                 @if(isset($package['price']) && $package['price'] > 0)
                                     <div class="d-flex align-items-center gap-1 flex-wrap">
-                                        <span class="fw-semibold" style="font-size: 0.875rem; color: var(--ti-primary);">
+                                        <span class="fw-semibold tipowerup-installer__list-price">
                                             {{ $package['price_formatted'] ?? ('$' . number_format($package['price'], 2)) }}
                                         </span>
                                         @if(!empty($package['original_price']) && $package['original_price'] > $package['price'])
@@ -381,14 +360,12 @@
                                         </span>
                                     @endif
                                 @else
-                                    <span class="fw-semibold text-success" style="font-size: 0.875rem;">Free</span>
+                                    <span class="fw-semibold text-success tipowerup-installer__text-sm">Free</span>
                                 @endif
                             </td>
-                            {{-- Version --}}
                             <td>
                                 <span class="text-muted small">{{ isset($package['version']) ? 'v'.$package['version'] : '—' }}</span>
                             </td>
-                            {{-- Actions --}}
                             <td class="text-end">
                                 <div class="d-flex justify-content-end gap-1 align-items-center">
                                     <button
@@ -434,7 +411,6 @@
         </div>
     @endif
 
-    {{-- Pagination --}}
     @if(!$isLoading && $totalPages > 1)
         <nav class="mt-3" aria-label="Marketplace pagination">
             <ul class="pagination pagination-sm justify-content-center mb-0">

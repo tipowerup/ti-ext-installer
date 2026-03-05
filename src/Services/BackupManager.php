@@ -244,7 +244,19 @@ class BackupManager
     {
         [$vendor, $name] = $this->splitPackageCode($packageCode);
 
-        // Check extensions directory first
+        // Check storage paths first (direct-installed packages)
+        $storagePaths = [
+            storage_path(sprintf('app/tipowerup/extensions/%s/%s', $vendor, preg_replace('/^ti-(ext|theme)-/', '', $name))),
+            storage_path(sprintf('app/tipowerup/themes/%s-%s', $vendor, preg_replace('/^ti-(ext|theme)-/', '', $name))),
+        ];
+
+        foreach ($storagePaths as $storagePath) {
+            if (is_dir($storagePath)) {
+                return $storagePath;
+            }
+        }
+
+        // Check extensions directory
         $extensionsPath = base_path(sprintf('extensions/%s/%s', $vendor, $name));
         if (is_dir($extensionsPath)) {
             return $extensionsPath;
@@ -265,13 +277,13 @@ class BackupManager
     private function determineTargetPath(string $packageCode): string
     {
         [$vendor, $name] = $this->splitPackageCode($packageCode);
+        $shortName = preg_replace('/^ti-(ext|theme)-/', '', $name);
 
-        // Default to extensions directory for tipowerup packages
+        // Default to storage directory for tipowerup packages (direct install location)
         if ($vendor === 'tipowerup') {
-            return base_path(sprintf('extensions/%s/%s', $vendor, $name));
+            return storage_path(sprintf('app/tipowerup/extensions/%s/%s', $vendor, $shortName));
         }
 
-        // Otherwise use vendor directory
         return base_path(sprintf('vendor/%s/%s', $vendor, $name));
     }
 

@@ -13,6 +13,9 @@ use Tipowerup\Installer\Models\License;
 
 class BatchInstaller
 {
+    /** @var array<string, array<string>> */
+    private array $dependencyGraph = [];
+
     public function __construct(
         private readonly InstallationPipeline $pipeline,
         private readonly PowerUpApiClient $apiClient,
@@ -210,6 +213,8 @@ class BatchInstaller
             }
         }
 
+        $this->dependencyGraph = $graph;
+
         // Perform topological sort
         $sorted = $this->topologicalSort($graph);
 
@@ -387,21 +392,14 @@ class BatchInstaller
             return false;
         }
 
-        try {
-            $detail = $this->apiClient->getPackageDetail($packageCode);
-            $dependencies = $detail['dependencies'] ?? [];
+        $dependencies = $this->dependencyGraph[$packageCode] ?? [];
 
-            foreach ($dependencies as $dependency) {
-                if (in_array($dependency, $failedPackages, true)) {
-                    return true;
-                }
+        foreach ($dependencies as $dependency) {
+            if (in_array($dependency, $failedPackages, true)) {
+                return true;
             }
-
-            return false;
-
-        } catch (Throwable) {
-            // If we can't check dependencies, assume no failure
-            return false;
         }
+
+        return false;
     }
 }

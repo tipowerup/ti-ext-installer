@@ -42,114 +42,7 @@ class DirectInstaller
     {
         $this->validatePackageCode($packageCode);
 
-        $onProgress ??= function (int $percent, string $message): void {};
-        $startTime = microtime(true);
-
-        try {
-            Log::info('DirectInstaller: Starting installation', [
-                'package_code' => $packageCode,
-            ]);
-
-            // Extract package metadata from license data
-            $downloadUrl = $licenseData['download_url'] ?? throw PackageInstallationException::downloadFailed(
-                $packageCode,
-                'Download URL not provided in license data'
-            );
-
-            $checksum = $licenseData['checksum'] ?? null;
-            $packageType = $licenseData['package_type'] ?? 'extension';
-            $version = $licenseData['version'] ?? 'unknown';
-
-            // Download package (0-50%)
-            $onProgress(5, 'Downloading package...');
-            $zipPath = $this->downloadPackage($downloadUrl, $packageCode);
-            $onProgress(50, 'Download complete');
-
-            // Verify checksum if provided
-            if ($checksum) {
-                $onProgress(52, 'Verifying checksum...');
-
-                if (!$this->verifyChecksum($zipPath, $checksum)) {
-                    File::delete($zipPath);
-
-                    throw PackageInstallationException::checksumMismatch($packageCode);
-                }
-
-                $onProgress(55, 'Checksum verified');
-            }
-
-            // Determine target path based on package type
-            $targetPath = $this->resolveTargetPath($packageCode, $packageType);
-
-            // Extract package (55-75%)
-            $onProgress(55, 'Extracting package...');
-            $this->extractPackage($zipPath, $targetPath, $packageCode);
-            $onProgress(75, 'Extraction complete');
-
-            // Clean up ZIP file
-            File::delete($zipPath);
-
-            // Validate package structure
-            $onProgress(78, 'Validating package structure...');
-
-            if (!$this->validatePackageStructure($targetPath, $packageType)) {
-                File::deleteDirectory($targetPath);
-
-                throw PackageInstallationException::extractionFailed(
-                    $packageCode,
-                    'Invalid package structure - missing required files'
-                );
-            }
-
-            // Register with TastyIgniter (80-90%)
-            $onProgress(80, 'Registering with TastyIgniter...');
-            $this->registerWithTI($packageCode, $packageType, $targetPath);
-            $onProgress(90, 'Registered successfully');
-
-            // Publish theme assets to public directory
-            if ($packageType === 'theme') {
-                $onProgress(92, 'Publishing theme assets...');
-                $this->publishThemeAssets($packageCode, $targetPath);
-            }
-
-            // Run migrations for extensions
-            if ($packageType === 'extension') {
-                $onProgress(92, 'Running migrations...');
-                $this->runMigrations($packageCode);
-            }
-
-            // Clear caches
-            $onProgress(95, 'Clearing caches...');
-            $this->clearCaches();
-
-            $onProgress(100, 'Installation complete');
-
-            $duration = microtime(true) - $startTime;
-
-            Log::info('DirectInstaller: Installation successful', [
-                'package_code' => $packageCode,
-                'duration_seconds' => round($duration, 2),
-            ]);
-
-            return [
-                'success' => true,
-                'method' => 'direct',
-                'version' => $version,
-                'path' => $targetPath,
-                'duration_seconds' => round($duration, 2),
-            ];
-
-        } catch (Throwable $e) {
-            $duration = microtime(true) - $startTime;
-
-            Log::error('DirectInstaller: Installation failed', [
-                'package_code' => $packageCode,
-                'error' => $e->getMessage(),
-                'duration_seconds' => round($duration, 2),
-            ]);
-
-            throw $e;
-        }
+        return $this->performInstallation($packageCode, $licenseData, false, $onProgress);
     }
 
     /**
@@ -159,15 +52,27 @@ class DirectInstaller
     {
         $this->validatePackageCode($packageCode);
 
+        return $this->performInstallation($packageCode, $licenseData, true, $onProgress);
+    }
+
+    /**
+     * @param  array{download_url: string, checksum?: string, package_type?: string, version?: string, current_version?: string}  $licenseData
+     */
+    private function performInstallation(
+        string $packageCode,
+        array $licenseData,
+        bool $isUpdate,
+        ?callable $onProgress,
+    ): array {
         $onProgress ??= function (int $percent, string $message): void {};
         $startTime = microtime(true);
+        $action = $isUpdate ? 'update' : 'installation';
 
         try {
-            Log::info('DirectInstaller: Starting update', [
+            Log::info(sprintf('DirectInstaller: Starting %s', $action), [
                 'package_code' => $packageCode,
             ]);
 
-            // Extract package metadata from license data
             $downloadUrl = $licenseData['download_url'] ?? throw PackageInstallationException::downloadFailed(
                 $packageCode,
                 'Download URL not provided in license data'
@@ -178,14 +83,12 @@ class DirectInstaller
             $version = $licenseData['version'] ?? 'unknown';
             $currentVersion = $licenseData['current_version'] ?? null;
 
-            // Download package (0-40%)
-            $onProgress(5, 'Downloading update...');
+            $onProgress(5, 'Downloading package...');
             $zipPath = $this->downloadPackage($downloadUrl, $packageCode);
-            $onProgress(40, 'Download complete');
+            $onProgress($isUpdate ? 40 : 50, 'Download complete');
 
-            // Verify checksum if provided
             if ($checksum) {
-                $onProgress(42, 'Verifying checksum...');
+                $onProgress($isUpdate ? 42 : 52, 'Verifying checksum...');
 
                 if (!$this->verifyChecksum($zipPath, $checksum)) {
                     File::delete($zipPath);
@@ -193,40 +96,35 @@ class DirectInstaller
                     throw PackageInstallationException::checksumMismatch($packageCode);
                 }
 
-                $onProgress(45, 'Checksum verified');
+                $onProgress($isUpdate ? 45 : 55, 'Checksum verified');
             }
 
-            // Determine target path based on package type
             $targetPath = $this->resolveTargetPath($packageCode, $packageType);
+            $backupPath = null;
 
-            // Create backup of existing installation (45-55%)
-            $onProgress(48, 'Creating backup...');
-            $backupPath = Storage::disk('local')->path(sprintf('tipowerup/backups/%s-', $packageCode).date('Y-m-d-His'));
-            if (File::exists($targetPath)) {
+            if ($isUpdate && File::exists($targetPath)) {
+                $onProgress(48, 'Creating backup...');
+                $backupPath = Storage::disk('local')->path(sprintf('tipowerup/backups/%s-', $packageCode).date('Y-m-d-His'));
                 File::copyDirectory($targetPath, $backupPath);
-            }
-            $onProgress(55, 'Backup created');
+                $onProgress(55, 'Backup created');
 
-            // Delete existing installation
-            if (File::exists($targetPath)) {
                 File::deleteDirectory($targetPath);
             }
 
-            // Extract new version (55-75%)
-            $onProgress(58, 'Extracting update...');
+            $onProgress($isUpdate ? 58 : 55, 'Extracting package...');
             $this->extractPackage($zipPath, $targetPath, $packageCode);
             $onProgress(75, 'Extraction complete');
 
-            // Clean up ZIP file
             File::delete($zipPath);
 
-            // Validate package structure
             $onProgress(78, 'Validating package structure...');
 
             if (!$this->validatePackageStructure($targetPath, $packageType)) {
-                if (File::exists($backupPath)) {
+                if ($backupPath !== null && File::exists($backupPath)) {
                     File::deleteDirectory($targetPath);
                     File::moveDirectory($backupPath, $targetPath);
+                } else {
+                    File::deleteDirectory($targetPath);
                 }
 
                 throw PackageInstallationException::extractionFailed(
@@ -235,20 +133,24 @@ class DirectInstaller
                 );
             }
 
-            // Publish theme assets to public directory
+            if (!$isUpdate) {
+                $onProgress(80, 'Registering with TastyIgniter...');
+                $this->registerWithTI($packageCode, $packageType, $targetPath);
+                $onProgress(90, 'Registered successfully');
+            }
+
             if ($packageType === 'theme') {
-                $onProgress(82, 'Publishing theme assets...');
+                $onProgress($isUpdate ? 82 : 92, 'Publishing theme assets...');
                 $this->publishThemeAssets($packageCode, $targetPath);
             }
 
-            // Run migrations for extensions (80-90%)
             if ($packageType === 'extension') {
-                $onProgress(82, 'Running migrations...');
+                $onProgress($isUpdate ? 82 : 92, 'Running migrations...');
 
                 try {
                     $this->runMigrations($packageCode);
                 } catch (Throwable $e) {
-                    if (File::exists($backupPath)) {
+                    if ($backupPath !== null && File::exists($backupPath)) {
                         File::deleteDirectory($targetPath);
                         File::moveDirectory($backupPath, $targetPath);
                     }
@@ -256,43 +158,49 @@ class DirectInstaller
                     throw PackageInstallationException::migrationFailed($packageCode, $e->getMessage());
                 }
 
-                $onProgress(90, 'Migrations complete');
+                if ($isUpdate) {
+                    $onProgress(90, 'Migrations complete');
+                }
             }
 
-            // Clear caches (90-95%)
-            $onProgress(92, 'Clearing caches...');
+            $onProgress($isUpdate ? 92 : 95, 'Clearing caches...');
             $this->clearCaches();
 
-            // Clean up backup on success
-            $onProgress(96, 'Cleaning up...');
-            if (File::exists($backupPath)) {
+            if ($backupPath !== null && File::exists($backupPath)) {
+                $onProgress(96, 'Cleaning up...');
                 File::deleteDirectory($backupPath);
             }
 
-            $onProgress(100, 'Update complete');
+            $onProgress(100, ucfirst($action).' complete');
 
             $duration = microtime(true) - $startTime;
 
-            Log::info('DirectInstaller: Update successful', [
+            Log::info(sprintf('DirectInstaller: %s successful', ucfirst($action)), [
                 'package_code' => $packageCode,
-                'from_version' => $currentVersion,
-                'to_version' => $version,
+                ...($isUpdate ? ['from_version' => $currentVersion, 'to_version' => $version] : []),
                 'duration_seconds' => round($duration, 2),
             ]);
 
-            return [
+            $result = [
                 'success' => true,
                 'method' => 'direct',
-                'from_version' => $currentVersion,
-                'to_version' => $version,
                 'path' => $targetPath,
                 'duration_seconds' => round($duration, 2),
             ];
 
+            if ($isUpdate) {
+                $result['from_version'] = $currentVersion;
+                $result['to_version'] = $version;
+            } else {
+                $result['version'] = $version;
+            }
+
+            return $result;
+
         } catch (Throwable $e) {
             $duration = microtime(true) - $startTime;
 
-            Log::error('DirectInstaller: Update failed', [
+            Log::error(sprintf('DirectInstaller: %s failed', ucfirst($action)), [
                 'package_code' => $packageCode,
                 'error' => $e->getMessage(),
                 'duration_seconds' => round($duration, 2),
@@ -684,12 +592,7 @@ class DirectInstaller
             throw PackageInstallationException::downloadFailed('unknown', 'Only HTTPS download URLs are allowed');
         }
 
-        $allowedHosts = ['pkg.tipowerup.com', 'packages.tipowerup.com', 'api.tipowerup.com'];
-
-        $extraHosts = env('TIPOWERUP_ALLOWED_DOWNLOAD_HOSTS', '');
-        if ($extraHosts !== '') {
-            $allowedHosts = array_merge($allowedHosts, explode(',', $extraHosts));
-        }
+        $allowedHosts = config('tipowerup.installer.allowed_download_hosts', []);
 
         if (!in_array($parsed['host'], $allowedHosts, true)) {
             throw PackageInstallationException::downloadFailed(
@@ -699,9 +602,6 @@ class DirectInstaller
         }
     }
 
-    /**
-     * Extract short name from package code.
-     */
     /**
      * Extract the short extension name from a Composer package code.
      * Strips the "ti-ext-" or "ti-theme-" prefix if present.

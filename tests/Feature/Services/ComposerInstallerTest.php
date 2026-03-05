@@ -586,11 +586,8 @@ describe('ensureRepository', function (): void {
         expect(file_get_contents($this->composerJsonPath))->toBe($contentBefore);
     });
 
-    it('DEFAULT_REPO_URL constant points to the tipowerup packages endpoint', function (): void {
-        $reflection = new ReflectionClass(ComposerInstaller::class);
-        $constant = $reflection->getConstant('DEFAULT_REPO_URL');
-
-        expect($constant)->toBe('https://packages.tipowerup.com');
+    it('config default repo URL points to the tipowerup packages endpoint', function (): void {
+        expect(config('tipowerup.installer.composer_repo_url'))->toBe('https://packages.tipowerup.com');
     });
 });
 

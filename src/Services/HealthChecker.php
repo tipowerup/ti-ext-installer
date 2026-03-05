@@ -131,7 +131,7 @@ class HealthChecker
         $apiReachable = false;
 
         try {
-            $response = Http::timeout(self::API_PING_TIMEOUT)->get(PowerUpApiClient::BASE_URL);
+            $response = Http::timeout(self::API_PING_TIMEOUT)->get(config('tipowerup.installer.api_url'));
             $apiReachable = $response->successful() || $response->status() < 500;
         } catch (ConnectionException) {
             $apiReachable = false;
@@ -144,7 +144,7 @@ class HealthChecker
             'message' => $apiReachable
                 ? 'TI PowerUp API is reachable'
                 : 'Unable to reach the TI PowerUp API',
-            'fix' => $apiReachable ? null : 'Ensure your server has outbound internet access. Check that your firewall or hosting provider allows connections to tipowerup.test.',
+            'fix' => $apiReachable ? null : sprintf('Ensure your server has outbound internet access. Check that your firewall or hosting provider allows connections to %s.', parse_url(config('tipowerup.installer.api_url'), PHP_URL_HOST)),
             'critical' => true,
         ];
 
@@ -153,10 +153,12 @@ class HealthChecker
 
     /**
      * Check if there are any critical failures.
+     *
+     * @param  array<int, array{key: string, label: string, passed: bool, message: string, fix: string|null, critical: bool}>|null  $checks
      */
-    public function hasCriticalFailures(): bool
+    public function hasCriticalFailures(?array $checks = null): bool
     {
-        $checks = $this->runAllChecks();
+        $checks ??= $this->runAllChecks();
 
         foreach ($checks as $check) {
             if ($check['critical'] && !$check['passed']) {

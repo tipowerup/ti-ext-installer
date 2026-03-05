@@ -13,10 +13,6 @@ use Tipowerup\Installer\Exceptions\LicenseValidationException;
 
 class PowerUpApiClient
 {
-    // private const string BASE_URL = 'https://api.tipowerup.com/v1';
-
-    public const string BASE_URL = 'https://tipowerup.test';
-
     private const int TIMEOUT_SECONDS = 30;
 
     private const int MAX_RETRIES = 3;
@@ -154,7 +150,7 @@ class PowerUpApiClient
                     'attempt' => $attempt,
                 ]);
 
-                $request = Http::baseUrl(self::BASE_URL)
+                $request = Http::baseUrl(config('tipowerup.installer.api_url'))
                     ->timeout($this->timeout)
                     ->acceptJson()
                     ->withHeaders($this->buildHeaders());

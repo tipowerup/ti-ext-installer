@@ -31,6 +31,7 @@ function mockSettingsHostingDetector(string $method = 'direct', ?string $compose
             'has_curl' => true,
         ]);
         $mock->shouldReceive('getRecommendedMethod')->andReturn($method);
+        $mock->shouldReceive('getUnwritableComposerPaths')->andReturn([]);
         $mock->shouldReceive('clearCache');
     });
 }

@@ -54,6 +54,8 @@ class Extension extends BaseExtension
     #[Override]
     public function register(): void
     {
+        $this->mergeConfigFrom(dirname(__DIR__).'/config/installer.php', 'tipowerup.installer');
+
         parent::register();
     }
 
@@ -102,15 +104,6 @@ class Extension extends BaseExtension
                 'group' => 'igniter::system.permissions.name',
             ],
         ];
-    }
-
-    /**
-     * Register extension settings.
-     */
-    #[Override]
-    public function registerSettings(): array
-    {
-        return [];
     }
 
     /**

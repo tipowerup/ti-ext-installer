@@ -1,4 +1,3 @@
-{{-- Package icon (44px default, used in grid cards) --}}
 @php
     $size = $size ?? '44px';
     $bg = is_array($icon) ? ($icon['background_color'] ?? null) : null;
@@ -13,7 +12,7 @@
         <img
             src="{{ $icon['url'] }}"
             alt="{{ $name }}"
-            style="width: 100%; height: 100%; object-fit: contain;"
+            class="tipowerup-installer__package-icon-img"
         />
     </div>
 @elseif(is_array($icon) && !empty($icon['class']))

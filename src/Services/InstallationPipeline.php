@@ -45,189 +45,7 @@ class InstallationPipeline
     ): array {
         $this->validatePackageCode($packageCode);
 
-        $batchId ??= (string) Str::uuid();
-        $startTime = microtime(true);
-        $onProgress ??= function (string $stage, int $percent, string $message): void {};
-
-        try {
-            // PREPARE (0-10%)
-            $this->currentStage = 'preparing';
-            $onProgress('preparing', 0, 'Starting installation...');
-            $this->updateProgress($batchId, $packageCode, 'preparing', 0, 'Starting installation...');
-
-            $onProgress('preparing', 5, 'Verifying license...');
-            $this->updateProgress($batchId, $packageCode, 'preparing', 5, 'Verifying license...');
-            $licenseData = $this->apiClient->verifyLicense($packageCode);
-
-            $packageRequirements = $licenseData['requirements'] ?? [];
-            $packageName = $licenseData['package_name'] ?? $packageCode;
-            $packageType = $licenseData['package_type'] ?? 'extension';
-            $version = $licenseData['version'] ?? '0.0.0';
-
-            $this->checkCancellation($batchId, $packageCode);
-
-            // COMPATIBILITY (10-20%)
-            $this->currentStage = 'compatibility';
-            $onProgress('compatibility', 10, 'Checking system compatibility...');
-            $this->updateProgress($batchId, $packageCode, 'compatibility', 10, 'Checking system compatibility...');
-
-            $compatResults = $this->compatibilityChecker->check($packageCode, $packageRequirements);
-            $isSatisfied = $this->compatibilityChecker->isSatisfied($packageCode, $packageRequirements);
-
-            if (!$isSatisfied) {
-                $failures = $this->compatibilityChecker->getFailures($compatResults);
-                $this->logFailure($packageCode, 'install', $method, 'Compatibility check failed', $startTime);
-
-                throw PackageInstallationException::downloadFailed(
-                    $packageCode,
-                    'Compatibility check failed: '.implode(', ', $failures)
-                );
-            }
-
-            $onProgress('compatibility', 20, 'Compatibility check passed');
-            $this->updateProgress($batchId, $packageCode, 'compatibility', 20, 'Compatibility check passed');
-
-            $this->checkCancellation($batchId, $packageCode);
-
-            // BACKUP (20-30%) - Back up existing files if present on disk
-            $this->currentStage = 'backup';
-            if ($this->packageExistsOnDisk($packageCode)) {
-                $onProgress('backup', 20, 'Creating backup...');
-                $this->updateProgress($batchId, $packageCode, 'backup', 20, 'Creating backup...');
-
-                $this->backupManager->createBackup($packageCode);
-
-                $onProgress('backup', 30, 'Backup created');
-                $this->updateProgress($batchId, $packageCode, 'backup', 30, 'Backup created');
-            } else {
-                $onProgress('backup', 30, 'Skipping backup (no existing files)');
-                $this->updateProgress($batchId, $packageCode, 'backup', 30, 'Skipping backup (no existing files)');
-            }
-
-            $this->checkCancellation($batchId, $packageCode);
-
-            // DOWNLOAD/INSTALL (30-70%)
-            $this->currentStage = 'installing';
-            $onProgress('installing', 30, 'Starting installation...');
-            $this->updateProgress($batchId, $packageCode, 'installing', 30, 'Starting installation...');
-
-            $installer = $method === 'composer' ? resolve(ComposerInstaller::class) : resolve(DirectInstaller::class);
-
-            $composerProgress = function (int $percent, string $message) use ($batchId, $packageCode, $onProgress): void {
-                $adjustedPercent = 30 + (int) ($percent * 0.4);
-                $onProgress('installing', $adjustedPercent, $message);
-                $this->updateProgress($batchId, $packageCode, 'installing', $adjustedPercent, $message);
-            };
-
-            // Execute installation with license data
-            $installResult = $installer->install($packageCode, $licenseData, $composerProgress);
-
-            $onProgress('installing', 70, 'Installation completed');
-            $this->updateProgress($batchId, $packageCode, 'installing', 70, 'Installation completed');
-
-            // MIGRATE (70-85%)
-            $this->currentStage = 'migrating';
-            $onProgress('migrating', 70, 'Running migrations...');
-            $this->updateProgress($batchId, $packageCode, 'migrating', 70, 'Running migrations...');
-
-            try {
-                // Migrations are typically handled by the installer
-                // But we can trigger them explicitly if needed
-                if (method_exists($installer, 'runMigrations')) {
-                    $installer->runMigrations($packageCode);
-                }
-
-                $onProgress('migrating', 85, 'Migrations completed');
-                $this->updateProgress($batchId, $packageCode, 'migrating', 85, 'Migrations completed');
-            } catch (Throwable $e) {
-                throw PackageInstallationException::migrationFailed($packageCode, $e->getMessage());
-            }
-
-            // FINALIZE (85-100%)
-            $this->currentStage = 'finalizing';
-            $onProgress('finalizing', 85, 'Finalizing installation...');
-            $this->updateProgress($batchId, $packageCode, 'finalizing', 85, 'Finalizing installation...');
-
-            // Clear caches
-            $this->clearCaches();
-
-            $onProgress('finalizing', 90, 'Updating license records...');
-            $this->updateProgress($batchId, $packageCode, 'finalizing', 90, 'Updating license records...');
-
-            // Update or create License model
-            $existingLicense = License::byPackage($packageCode)->first();
-            License::updateOrCreate(
-                ['package_code' => $packageCode],
-                [
-                    'package_name' => $packageName,
-                    'package_type' => $packageType,
-                    'version' => $version,
-                    'install_method' => $method,
-                    'installed_at' => $existingLicense?->installed_at ?? now(),
-                    'updated_at' => now(),
-                    'expires_at' => isset($licenseData['expires_at']) ? new DateTime($licenseData['expires_at']) : null,
-                    'is_active' => true,
-                ]
-            );
-
-            $onProgress('finalizing', 95, 'Logging installation...');
-            $this->updateProgress($batchId, $packageCode, 'finalizing', 95, 'Logging installation...');
-
-            // Log success
-            $this->logSuccess(
-                $packageCode,
-                'install',
-                $method,
-                $existingLicense?->version,
-                $version,
-                $startTime
-            );
-
-            $onProgress('complete', 100, 'Installation complete!');
-            $this->updateProgress($batchId, $packageCode, 'complete', 100, 'Installation complete!');
-
-            return [
-                'success' => true,
-                'package_code' => $packageCode,
-                'version' => $version,
-                'method' => $method,
-                'duration' => microtime(true) - $startTime,
-            ];
-
-        } catch (Throwable $e) {
-            Log::error(sprintf("Installation failed for '%s'", $packageCode), [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            $errorCode = $this->classifyError($e);
-
-            // Attempt backup restore (skip if user cancelled)
-            if ($errorCode !== 'cancelled') {
-                try {
-                    if ($this->backupManager->hasBackup($packageCode)) {
-                        $onProgress('restoring', 0, 'Installation failed. Restoring backup...');
-                        $this->updateProgress($batchId, $packageCode, 'restoring', 0, 'Installation failed. Restoring backup...');
-
-                        $this->backupManager->restore($packageCode);
-                        $onProgress('restoring', 100, 'Backup restored');
-                        $this->updateProgress($batchId, $packageCode, 'restoring', 100, 'Backup restored');
-                    }
-                } catch (Throwable $restoreError) {
-                    Log::error(sprintf("Backup restore failed for '%s'", $packageCode), [
-                        'error' => $restoreError->getMessage(),
-                    ]);
-                }
-            }
-
-            // Log failure
-            $this->logFailure($packageCode, 'install', $method, $e->getMessage(), $startTime);
-
-            $finalStage = $errorCode === 'cancelled' ? 'cancelled' : 'failed';
-            $this->updateProgress($batchId, $packageCode, $finalStage, 0, 'Installation failed', $e->getMessage(), $errorCode, $this->currentStage);
-
-            throw $e;
-        }
+        return $this->executePipeline($packageCode, $method, 'install', $onProgress, $batchId);
     }
 
     /**
@@ -241,33 +59,47 @@ class InstallationPipeline
     ): array {
         $this->validatePackageCode($packageCode);
 
+        return $this->executePipeline($packageCode, $method, 'update', $onProgress, $batchId);
+    }
+
+    private function executePipeline(
+        string $packageCode,
+        string $method,
+        string $action,
+        ?callable $onProgress,
+        ?string $batchId,
+    ): array {
         $batchId ??= (string) Str::uuid();
         $startTime = microtime(true);
         $onProgress ??= function (string $stage, int $percent, string $message): void {};
+        $isUpdate = $action === 'update';
+        $actionLabel = $isUpdate ? 'update' : 'installation';
+        $installStage = $isUpdate ? 'updating' : 'installing';
 
         try {
-            // Get current version
             $existingLicense = License::byPackage($packageCode)->first();
 
-            if (!$existingLicense) {
+            if ($isUpdate && !$existingLicense) {
                 throw new PackageInstallationException(
                     sprintf("Package '%s' is not installed. Cannot update.", $packageCode)
                 );
             }
 
-            $fromVersion = $existingLicense->version;
+            $fromVersion = $existingLicense?->version;
 
             // PREPARE (0-10%)
             $this->currentStage = 'preparing';
-            $onProgress('preparing', 0, 'Starting update...');
-            $this->updateProgress($batchId, $packageCode, 'preparing', 0, 'Starting update...');
+            $onProgress('preparing', 0, sprintf('Starting %s...', $actionLabel));
+            $this->updateProgress($batchId, $packageCode, 'preparing', 0, sprintf('Starting %s...', $actionLabel));
 
             $onProgress('preparing', 5, 'Verifying license...');
             $this->updateProgress($batchId, $packageCode, 'preparing', 5, 'Verifying license...');
             $licenseData = $this->apiClient->verifyLicense($packageCode);
 
-            $toVersion = $licenseData['version'] ?? '0.0.0';
             $packageRequirements = $licenseData['requirements'] ?? [];
+            $packageName = $licenseData['package_name'] ?? $packageCode;
+            $packageType = $licenseData['package_type'] ?? 'extension';
+            $toVersion = $licenseData['version'] ?? '0.0.0';
 
             $this->checkCancellation($batchId, $packageCode);
 
@@ -276,14 +108,29 @@ class InstallationPipeline
             $onProgress('compatibility', 10, 'Checking system compatibility...');
             $this->updateProgress($batchId, $packageCode, 'compatibility', 10, 'Checking system compatibility...');
 
-            $this->compatibilityChecker->assertSatisfied($packageCode, $packageRequirements);
+            if ($isUpdate) {
+                $this->compatibilityChecker->assertSatisfied($packageCode, $packageRequirements);
+            } else {
+                $compatResults = $this->compatibilityChecker->check($packageCode, $packageRequirements);
+                $isSatisfied = $this->compatibilityChecker->isSatisfied($packageCode, $packageRequirements);
+
+                if (!$isSatisfied) {
+                    $failures = $this->compatibilityChecker->getFailures($compatResults);
+                    $this->logFailure($packageCode, $action, $method, 'Compatibility check failed', $startTime);
+
+                    throw PackageInstallationException::downloadFailed(
+                        $packageCode,
+                        'Compatibility check failed: '.implode(', ', $failures)
+                    );
+                }
+            }
 
             $onProgress('compatibility', 20, 'Compatibility check passed');
             $this->updateProgress($batchId, $packageCode, 'compatibility', 20, 'Compatibility check passed');
 
             $this->checkCancellation($batchId, $packageCode);
 
-            // BACKUP (20-30%) - Backup before update if files exist on disk
+            // BACKUP (20-30%)
             $this->currentStage = 'backup';
             if ($this->packageExistsOnDisk($packageCode)) {
                 $onProgress('backup', 20, 'Creating backup...');
@@ -294,34 +141,34 @@ class InstallationPipeline
                 $onProgress('backup', 30, 'Backup created');
                 $this->updateProgress($batchId, $packageCode, 'backup', 30, 'Backup created');
             } else {
-                $onProgress('backup', 30, 'Skipping backup (package files not found)');
-                $this->updateProgress($batchId, $packageCode, 'backup', 30, 'Skipping backup (package files not found)');
+                $skipMsg = $isUpdate ? 'Skipping backup (package files not found)' : 'Skipping backup (no existing files)';
+                $onProgress('backup', 30, $skipMsg);
+                $this->updateProgress($batchId, $packageCode, 'backup', 30, $skipMsg);
             }
 
             $this->checkCancellation($batchId, $packageCode);
 
-            // UPDATE (30-70%)
-            $this->currentStage = 'updating';
-            $onProgress('updating', 30, 'Starting update...');
-            $this->updateProgress($batchId, $packageCode, 'updating', 30, 'Starting update...');
+            // DOWNLOAD/INSTALL (30-70%)
+            $this->currentStage = $installStage;
+            $onProgress($installStage, 30, sprintf('Starting %s...', $actionLabel));
+            $this->updateProgress($batchId, $packageCode, $installStage, 30, sprintf('Starting %s...', $actionLabel));
 
             $installer = $method === 'composer' ? resolve(ComposerInstaller::class) : resolve(DirectInstaller::class);
 
-            $composerProgress = function (int $percent, string $message) use ($batchId, $packageCode, $onProgress): void {
+            $composerProgress = function (int $percent, string $message) use ($batchId, $packageCode, $onProgress, $installStage): void {
                 $adjustedPercent = 30 + (int) ($percent * 0.4);
-                $onProgress('updating', $adjustedPercent, $message);
-                $this->updateProgress($batchId, $packageCode, 'updating', $adjustedPercent, $message);
+                $onProgress($installStage, $adjustedPercent, $message);
+                $this->updateProgress($batchId, $packageCode, $installStage, $adjustedPercent, $message);
             };
 
-            // Execute update
-            if (method_exists($installer, 'update')) {
+            if ($isUpdate && method_exists($installer, 'update')) {
                 $installer->update($packageCode, $composerProgress);
             } else {
                 $installer->install($packageCode, $licenseData, $composerProgress);
             }
 
-            $onProgress('updating', 70, 'Update completed');
-            $this->updateProgress($batchId, $packageCode, 'updating', 70, 'Update completed');
+            $onProgress($installStage, 70, ucfirst($actionLabel).' completed');
+            $this->updateProgress($batchId, $packageCode, $installStage, 70, ucfirst($actionLabel).' completed');
 
             // MIGRATE (70-85%)
             $this->currentStage = 'migrating';
@@ -341,52 +188,72 @@ class InstallationPipeline
 
             // FINALIZE (85-100%)
             $this->currentStage = 'finalizing';
-            $onProgress('finalizing', 85, 'Finalizing update...');
-            $this->updateProgress($batchId, $packageCode, 'finalizing', 85, 'Finalizing update...');
+            $onProgress('finalizing', 85, sprintf('Finalizing %s...', $actionLabel));
+            $this->updateProgress($batchId, $packageCode, 'finalizing', 85, sprintf('Finalizing %s...', $actionLabel));
 
             $this->clearCaches();
 
             $onProgress('finalizing', 90, 'Updating license records...');
             $this->updateProgress($batchId, $packageCode, 'finalizing', 90, 'Updating license records...');
 
-            // Update License model
-            $existingLicense->update([
-                'version' => $toVersion,
-                'updated_at' => now(),
-            ]);
+            if ($isUpdate) {
+                $existingLicense->update([
+                    'version' => $toVersion,
+                    'updated_at' => now(),
+                ]);
+            } else {
+                License::updateOrCreate(
+                    ['package_code' => $packageCode],
+                    [
+                        'package_name' => $packageName,
+                        'package_type' => $packageType,
+                        'version' => $toVersion,
+                        'install_method' => $method,
+                        'installed_at' => $existingLicense?->installed_at ?? now(),
+                        'updated_at' => now(),
+                        'expires_at' => isset($licenseData['expires_at']) ? new DateTime($licenseData['expires_at']) : null,
+                        'is_active' => true,
+                    ]
+                );
+            }
 
-            $onProgress('finalizing', 95, 'Logging update...');
-            $this->updateProgress($batchId, $packageCode, 'finalizing', 95, 'Logging update...');
+            $onProgress('finalizing', 95, sprintf('Logging %s...', $actionLabel));
+            $this->updateProgress($batchId, $packageCode, 'finalizing', 95, sprintf('Logging %s...', $actionLabel));
 
-            // Log success
-            $this->logSuccess($packageCode, 'update', $method, $fromVersion, $toVersion, $startTime);
+            $this->logSuccess($packageCode, $action, $method, $fromVersion, $toVersion, $startTime);
 
-            $onProgress('complete', 100, 'Update complete!');
-            $this->updateProgress($batchId, $packageCode, 'complete', 100, 'Update complete!');
+            $onProgress('complete', 100, ucfirst($actionLabel).' complete!');
+            $this->updateProgress($batchId, $packageCode, 'complete', 100, ucfirst($actionLabel).' complete!');
 
-            return [
+            $result = [
                 'success' => true,
                 'package_code' => $packageCode,
-                'from_version' => $fromVersion,
-                'to_version' => $toVersion,
                 'method' => $method,
                 'duration' => microtime(true) - $startTime,
             ];
 
+            if ($isUpdate) {
+                $result['from_version'] = $fromVersion;
+                $result['to_version'] = $toVersion;
+            } else {
+                $result['version'] = $toVersion;
+            }
+
+            return $result;
+
         } catch (Throwable $e) {
-            Log::error(sprintf("Update failed for '%s'", $packageCode), [
+            Log::error(sprintf("%s failed for '%s'", ucfirst($actionLabel), $packageCode), [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
 
             $errorCode = $this->classifyError($e);
 
-            // Attempt backup restore (skip if user cancelled)
             if ($errorCode !== 'cancelled') {
                 try {
                     if ($this->backupManager->hasBackup($packageCode)) {
-                        $onProgress('restoring', 0, 'Update failed. Restoring backup...');
-                        $this->updateProgress($batchId, $packageCode, 'restoring', 0, 'Update failed. Restoring backup...');
+                        $onProgress('restoring', 0, sprintf('%s failed. Restoring backup...', ucfirst($actionLabel)));
+                        $this->updateProgress($batchId, $packageCode, 'restoring', 0, sprintf('%s failed. Restoring backup...', ucfirst($actionLabel)));
 
                         $this->backupManager->restore($packageCode);
                         $onProgress('restoring', 100, 'Backup restored');
@@ -399,11 +266,10 @@ class InstallationPipeline
                 }
             }
 
-            // Log failure
-            $this->logFailure($packageCode, 'update', $method, $e->getMessage(), $startTime);
+            $this->logFailure($packageCode, $action, $method, $e->getMessage(), $startTime);
 
             $finalStage = $errorCode === 'cancelled' ? 'cancelled' : 'failed';
-            $this->updateProgress($batchId, $packageCode, $finalStage, 0, 'Update failed', $e->getMessage(), $errorCode, $this->currentStage);
+            $this->updateProgress($batchId, $packageCode, $finalStage, 0, ucfirst($actionLabel).' failed', $e->getMessage(), $errorCode, $this->currentStage);
 
             throw $e;
         }
@@ -475,12 +341,25 @@ class InstallationPipeline
     }
 
     /**
-     * Check if the package files exist on disk (extensions or vendor directory).
+     * Check if the package files exist on disk (storage, extensions, or vendor directory).
      */
     private function packageExistsOnDisk(string $packageCode): bool
     {
         [$vendor, $name] = explode('/', $packageCode, 2);
+        $shortName = preg_replace('/^ti-(ext|theme)-/', '', $name);
 
+        // Check storage paths (direct-installed packages)
+        $storageExtPath = storage_path(sprintf('app/tipowerup/extensions/%s/%s', $vendor, $shortName));
+        if (is_dir($storageExtPath)) {
+            return true;
+        }
+
+        $storageThemePath = storage_path(sprintf('app/tipowerup/themes/%s-%s', $vendor, $shortName));
+        if (is_dir($storageThemePath)) {
+            return true;
+        }
+
+        // Check extensions directory
         $extensionsPath = base_path(sprintf('extensions/%s/%s', $vendor, $name));
         if (is_dir($extensionsPath)) {
             return true;

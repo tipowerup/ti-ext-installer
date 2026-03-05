@@ -21,15 +21,13 @@ class ComposerInstaller
     use RegistersWithTI;
     use ValidatesPackageCode;
 
-    private const string DEFAULT_REPO_URL = 'https://packages.tipowerup.com';
-
     private const int TIMEOUT_SECONDS = 600;
 
     private ?string $authToken = null;
 
     private function repoUrl(): string
     {
-        return env('TIPOWERUP_COMPOSER_REPO_URL', self::DEFAULT_REPO_URL);
+        return config('tipowerup.installer.composer_repo_url');
     }
 
     /**
@@ -316,6 +314,11 @@ class ComposerInstaller
     private function ensureRepository(): void
     {
         $composerJsonPath = base_path('composer.json');
+
+        if (!file_exists($composerJsonPath)) {
+            return;
+        }
+
         $composerData = json_decode(file_get_contents($composerJsonPath), true);
 
         // Check if repository already exists
@@ -509,6 +512,11 @@ class ComposerInstaller
     private function removeFromComposerJson(string $packageCode): void
     {
         $path = base_path('composer.json');
+
+        if (!file_exists($path)) {
+            return;
+        }
+
         $data = json_decode(file_get_contents($path), true);
 
         $changed = false;

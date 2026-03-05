@@ -1,5 +1,4 @@
 <div class="tipowerup-installer__installed-packages">
-    {{-- Error Alert --}}
     @if($errorMessage)
         <div class="alert alert-danger d-flex align-items-start mb-3" role="alert">
             <i class="fa fa-exclamation-triangle me-2 mt-1 flex-shrink-0"></i>
@@ -19,10 +18,8 @@
         </div>
     @endif
 
-    {{-- Header with Actions --}}
     <div class="d-flex justify-content-end align-items-center">
         <div class="d-flex gap-2 align-items-center">
-            {{-- Check Updates Button --}}
             @if(count($installedPackages) > 0)
                 <button wire:click="checkUpdates"
                         wire:loading.attr="disabled"
@@ -39,7 +36,6 @@
                 </button>
             @endif
 
-            {{-- View Mode Toggle --}}
             @if(count($installedPackages) > 0 || count($availablePackages) > 0)
                 <button wire:click="toggleViewMode"
                         class="btn btn-outline-secondary btn-sm"
@@ -50,31 +46,29 @@
         </div>
     </div>
 
-    {{-- Loading State --}}
     @if($isLoading)
         <div class="tipowerup-installer__packages-grid">
             @for($i = 0; $i < 3; $i++)
                 <div class="card">
                     <div class="card-body">
                         <div class="d-flex align-items-start mb-3">
-                            <div class="tipowerup-installer__skeleton" style="width: 56px; height: 56px; border-radius: 0.75rem;"></div>
+                            <div class="tipowerup-installer__skeleton tipowerup-installer__skeleton--icon-lg"></div>
                             <div class="ms-3 flex-grow-1">
-                                <div class="tipowerup-installer__skeleton mb-2" style="width: 60%; height: 20px;"></div>
-                                <div class="tipowerup-installer__skeleton" style="width: 40%; height: 16px;"></div>
+                                <div class="tipowerup-installer__skeleton tipowerup-installer__skeleton--title mb-2"></div>
+                                <div class="tipowerup-installer__skeleton tipowerup-installer__skeleton--subtitle"></div>
                             </div>
                         </div>
-                        <div class="tipowerup-installer__skeleton mb-2" style="width: 100%; height: 16px;"></div>
-                        <div class="tipowerup-installer__skeleton mb-3" style="width: 80%; height: 16px;"></div>
+                        <div class="tipowerup-installer__skeleton tipowerup-installer__skeleton--body mb-2"></div>
+                        <div class="tipowerup-installer__skeleton tipowerup-installer__skeleton--body-short mb-3"></div>
                         <div class="d-flex gap-2">
-                            <div class="tipowerup-installer__skeleton" style="width: 80px; height: 32px;"></div>
-                            <div class="tipowerup-installer__skeleton" style="width: 80px; height: 32px;"></div>
+                            <div class="tipowerup-installer__skeleton tipowerup-installer__skeleton--action-btn"></div>
+                            <div class="tipowerup-installer__skeleton tipowerup-installer__skeleton--action-btn"></div>
                         </div>
                     </div>
                 </div>
             @endfor
         </div>
 
-    {{-- Empty State (both sections empty) --}}
     @elseif(count($installedPackages) === 0 && count($availablePackages) === 0)
         <div class="tipowerup-installer__empty-state">
             <div class="tipowerup-installer__empty-icon">
@@ -99,16 +93,14 @@
         @endphp
         @if(count($packagesWithUpdates) > 0)
             <div class="tipowerup-installer__section mb-3">
-                {{-- Section Header --}}
                 <div wire:click="toggleUpdatesSection"
-                     class="tipowerup-installer__section-header"
-                     style="cursor: pointer;">
+                     class="tipowerup-installer__section-header tipowerup-installer__section-header--clickable">
                     <div class="d-flex align-items-center gap-2">
-                        <i class="fa {{ $updatesCollapsed ? 'fa-chevron-right' : 'fa-chevron-down' }}" style="font-size: 0.75rem; width: 12px;"></i>
-                        <h6 class="mb-0 fw-semibold" style="font-size: 0.9375rem;">
+                        <i class="fa {{ $updatesCollapsed ? 'fa-chevron-right' : 'fa-chevron-down' }} tipowerup-installer__chevron-icon"></i>
+                        <h6 class="mb-0 fw-semibold tipowerup-installer__section-title">
                             {{ lang('tipowerup.installer::default.updates_title') }}
                         </h6>
-                        <span class="badge text-white" style="font-size: 0.6875rem; background-color: #0d9488;">{{ count($packagesWithUpdates) }}</span>
+                        <span class="badge text-white tipowerup-installer__section-badge--updates">{{ count($packagesWithUpdates) }}</span>
                     </div>
                 </div>
 
@@ -120,8 +112,8 @@
                                 <div class="d-flex align-items-center gap-3">
                                     @include('tipowerup.installer::livewire._partials.package-icon-small', ['icon' => $icon, 'name' => $package['name'], 'type' => $package['type']])
                                     <div>
-                                        <strong style="font-size: 0.875rem;">{{ $package['name'] }}</strong>
-                                        <div class="text-muted" style="font-size: 0.75rem;">
+                                        <strong class="tipowerup-installer__text-sm">{{ $package['name'] }}</strong>
+                                        <div class="text-muted tipowerup-installer__text-xs">
                                             {{ $package['version'] }} &rarr; {{ $package['latest_version'] }}
                                         </div>
                                     </div>
@@ -148,29 +140,24 @@
         {{-- ====== Installed PowerUps Section (collapsible) ====== --}}
         @if(count($installedPackages) > 0)
             <div class="tipowerup-installer__section mb-3">
-                {{-- Section Header --}}
                 <div wire:click="toggleInstalledSection"
-                     class="tipowerup-installer__section-header"
-                     style="cursor: pointer;">
+                     class="tipowerup-installer__section-header tipowerup-installer__section-header--clickable">
                     <div class="d-flex align-items-center gap-2">
-                        <i class="fa {{ $installedCollapsed ? 'fa-chevron-right' : 'fa-chevron-down' }}" style="font-size: 0.75rem; width: 12px;"></i>
-                        <h6 class="mb-0 fw-semibold" style="font-size: 0.9375rem;">
+                        <i class="fa {{ $installedCollapsed ? 'fa-chevron-right' : 'fa-chevron-down' }} tipowerup-installer__chevron-icon"></i>
+                        <h6 class="mb-0 fw-semibold tipowerup-installer__section-title">
                             {{ lang('tipowerup.installer::default.my_powerups_installed_title') }}
                         </h6>
-                        <span class="badge text-white" style="font-size: 0.6875rem; background-color: #3b82f6;">{{ count($installedPackages) }}</span>
+                        <span class="badge text-white tipowerup-installer__section-badge--installed">{{ count($installedPackages) }}</span>
                     </div>
                 </div>
 
-                {{-- Section Content --}}
                 @if(!$installedCollapsed)
                     @if($viewMode === 'grid')
-                        {{-- Grid View --}}
                         <div class="tipowerup-installer__packages-grid mt-2">
                             @foreach($installedPackages as $package)
                                 @php $icon = $package['icon'] ?? null; @endphp
                                 <div wire:key="installed-{{ $package['code'] }}" class="card tipowerup-installer__package-card">
                                     <div class="card-body">
-                                        {{-- Package Header --}}
                                         <div class="tipowerup-installer__package-header">
                                             @include('tipowerup.installer::livewire._partials.package-icon', ['icon' => $icon, 'name' => $package['name'], 'type' => $package['type'], 'size' => '44px'])
 
@@ -178,8 +165,7 @@
                                                 <h6 class="tipowerup-installer__package-name mb-0">
                                                     {{ $package['name'] }}
                                                     @if(!$package['is_owned'])
-                                                        <i class="fa fa-exclamation-triangle text-warning ms-1"
-                                                           style="font-size: 0.75rem;"
+                                                        <i class="fa fa-exclamation-triangle text-warning ms-1 tipowerup-installer__icon-xxs"
                                                            title="{{ lang('tipowerup.installer::default.my_powerups_not_owned_tooltip') }}"></i>
                                                     @endif
                                                 </h6>
@@ -195,7 +181,6 @@
                                             </div>
                                         </div>
 
-                                        {{-- Package Meta (Badges) --}}
                                         <div class="tipowerup-installer__package-meta">
                                             <span class="tipowerup-installer__badge tipowerup-installer__badge--{{ $package['type'] }}">
                                                 {{ ucfirst($package['type']) }}
@@ -211,15 +196,12 @@
                                             @endif
                                         </div>
 
-                                        {{-- Description --}}
                                         @if($package['description'])
                                             <p class="tipowerup-installer__package-description">
                                                 {{ \Illuminate\Support\Str::limit($package['description'], 120) }}
                                             </p>
                                         @endif
 
-
-                                        {{-- License Info --}}
                                         @if($package['expires_at'])
                                             <div class="mb-3">
                                                 <small class="text-muted d-block">
@@ -229,10 +211,8 @@
                                             </div>
                                         @endif
 
-                                        {{-- Package Footer (Actions) --}}
                                         <div class="tipowerup-installer__package-footer">
                                             <div class="d-flex gap-2 flex-wrap align-items-center">
-                                                {{-- Left: Update + Enable/Disable/Activate --}}
                                                 <div class="d-flex gap-2">
                                                     @if($package['has_update'])
                                                         <button wire:click="updatePackage('{{ $package['code'] }}')"
@@ -296,7 +276,6 @@
                                                     @endif
                                                 </div>
 
-                                                {{-- Right: Settings/Edit/Customize + Eye + Delete/Uninstall --}}
                                                 <div class="d-flex gap-2 ms-auto">
                                                     @if($package['type'] === 'extension' && $package['is_active'] && $package['settings_url'])
                                                         <a href="{{ $package['settings_url'] }}"
@@ -342,16 +321,15 @@
                             @endforeach
                         </div>
                     @else
-                        {{-- List View --}}
                         <div class="table-responsive mt-2">
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
-                                        <th style="width: 50px;"></th>
+                                        <th class="tipowerup-installer__table-col--icon-sm"></th>
                                         <th>{{ lang('tipowerup.installer::default.detail_version') }}</th>
                                         <th>Type</th>
                                         <th>Status</th>
-                                        <th style="width: 320px;" class="text-end">Actions</th>
+                                        <th class="tipowerup-installer__table-col--actions-wide text-end">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -366,8 +344,7 @@
                                                     <strong>
                                                         {{ $package['name'] }}
                                                         @if(!$package['is_owned'])
-                                                            <i class="fa fa-exclamation-triangle text-warning ms-1"
-                                                               style="font-size: 0.6875rem;"
+                                                            <i class="fa fa-exclamation-triangle text-warning ms-1 tipowerup-installer__icon-xxs"
                                                                title="{{ lang('tipowerup.installer::default.my_powerups_not_owned_tooltip') }}"></i>
                                                         @endif
                                                     </strong>
@@ -406,7 +383,7 @@
                                                                 wire:target="updatePackage('{{ $package['code'] }}')"
                                                                 class="btn btn-success">
                                                             <span wire:loading wire:target="updatePackage('{{ $package['code'] }}')">
-                                                                <span class="tipowerup-installer__spinner" style="width: 14px; height: 14px; border-width: 2px;"></span>
+                                                                <span class="tipowerup-installer__spinner tipowerup-installer__spinner--sm"></span>
                                                             </span>
                                                             <span wire:loading.remove wire:target="updatePackage('{{ $package['code'] }}')">
                                                                 <i class="fa fa-arrow-up"></i>
@@ -487,37 +464,31 @@
             </div>
         @endif
 
-        {{-- Divider between sections --}}
         @if(count($installedPackages) > 0 && count($availablePackages) > 0)
-            <hr class="my-3" style="border-color: var(--ti-gray-200);">
+            <hr class="my-3 tipowerup-installer__divider">
         @endif
 
         {{-- ====== Available PowerUps Section (collapsible) ====== --}}
         @if(count($availablePackages) > 0)
             <div class="tipowerup-installer__section">
-                {{-- Section Header --}}
                 <div wire:click="toggleAvailableSection"
-                     class="tipowerup-installer__section-header"
-                     style="cursor: pointer;">
+                     class="tipowerup-installer__section-header tipowerup-installer__section-header--clickable">
                     <div class="d-flex align-items-center gap-2">
-                        <i class="fa {{ $availableCollapsed ? 'fa-chevron-right' : 'fa-chevron-down' }}" style="font-size: 0.75rem; width: 12px;"></i>
-                        <h6 class="mb-0 fw-semibold" style="font-size: 0.9375rem;">
+                        <i class="fa {{ $availableCollapsed ? 'fa-chevron-right' : 'fa-chevron-down' }} tipowerup-installer__chevron-icon"></i>
+                        <h6 class="mb-0 fw-semibold tipowerup-installer__section-title">
                             {{ lang('tipowerup.installer::default.my_powerups_available_title') }}
                         </h6>
-                        <span class="badge text-white" style="font-size: 0.6875rem; background-color: #F97316;">{{ count($availablePackages) }}</span>
+                        <span class="badge text-white tipowerup-installer__section-badge--available">{{ count($availablePackages) }}</span>
                     </div>
                 </div>
 
-                {{-- Section Content --}}
                 @if(!$availableCollapsed)
                     @if($viewMode === 'grid')
-                        {{-- Grid View --}}
                         <div class="tipowerup-installer__packages-grid mt-2">
                             @foreach($availablePackages as $package)
                                 @php $icon = $package['icon'] ?? null; @endphp
                                 <div wire:key="available-{{ $package['code'] }}" class="card tipowerup-installer__package-card">
                                     <div class="card-body">
-                                        {{-- Package Header --}}
                                         <div class="tipowerup-installer__package-header">
                                             @include('tipowerup.installer::livewire._partials.package-icon', ['icon' => $icon, 'name' => $package['name'], 'type' => $package['type'], 'size' => '44px'])
 
@@ -530,20 +501,18 @@
                                                         {{ ucfirst($package['type']) }}
                                                     </span>
                                                     @if($package['version'])
-                                                        <span class="text-muted" style="font-size: 0.75rem;">v{{ $package['version'] }}</span>
+                                                        <span class="text-muted tipowerup-installer__text-xs">v{{ $package['version'] }}</span>
                                                     @endif
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {{-- Description --}}
                                         @if($package['description'])
                                             <p class="tipowerup-installer__package-description">
                                                 {{ \Illuminate\Support\Str::limit($package['description'], 120) }}
                                             </p>
                                         @endif
 
-                                        {{-- Package Footer (Actions) --}}
                                         <div class="tipowerup-installer__package-footer">
                                             <div class="d-flex gap-2 flex-wrap align-items-center">
                                                 <button wire:click="installPackage('{{ $package['code'] }}')"
@@ -571,15 +540,14 @@
                             @endforeach
                         </div>
                     @else
-                        {{-- List View --}}
                         <div class="table-responsive mt-2">
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
-                                        <th style="width: 50px;"></th>
+                                        <th class="tipowerup-installer__table-col--icon-sm"></th>
                                         <th>{{ lang('tipowerup.installer::default.marketplace_table_header_name') }}</th>
                                         <th>Type</th>
-                                        <th style="width: 200px;" class="text-end">Actions</th>
+                                        <th class="tipowerup-installer__table-col--actions text-end">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -611,7 +579,7 @@
                                                             wire:target="installPackage('{{ $package['code'] }}')"
                                                             class="btn btn-success">
                                                         <span wire:loading wire:target="installPackage('{{ $package['code'] }}')">
-                                                            <span class="tipowerup-installer__spinner me-1" style="width: 14px; height: 14px; border-width: 2px;"></span>
+                                                            <span class="tipowerup-installer__spinner tipowerup-installer__spinner--sm me-1"></span>
                                                         </span>
                                                         <span wire:loading.remove wire:target="installPackage('{{ $package['code'] }}')">
                                                             <i class="fa fa-download me-1"></i>
@@ -640,7 +608,7 @@
 
     {{-- Uninstall Confirmation Modal --}}
     @if($confirmAction)
-        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal fade show d-block tipowerup-installer__modal-backdrop" tabindex="-1">
             <div class="modal-dialog modal-dialog-centered modal-sm">
                 <div class="modal-content">
                     <div class="modal-header border-bottom py-3">

@@ -35,8 +35,9 @@ trait HandlesApiErrors
 
     protected function showToast(string $level, string $message): void
     {
-        $escaped = addslashes($message);
-        $this->js("$.ti.flashMessage({level: '{$level}', html: '{$escaped}'})");
+        $safeLevel = json_encode($level, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR);
+        $safeMessage = json_encode($message, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR);
+        $this->js("$.ti.flashMessage({level: {$safeLevel}, html: {$safeMessage}})");
     }
 
     private function setKeyError(): void

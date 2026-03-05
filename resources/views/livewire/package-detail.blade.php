@@ -1,6 +1,5 @@
 <div>
     @if($isLoading)
-        {{-- Loading State --}}
         <div class="text-center py-5">
             <div class="spinner-border text-primary mb-3" role="status">
                 <span class="visually-hidden">Loading...</span>
@@ -8,9 +7,8 @@
             <p class="text-muted">{{ lang('tipowerup.installer::default.detail_loading') }}</p>
         </div>
     @elseif($errorMessage)
-        {{-- Error State --}}
         <div class="alert alert-danger d-flex align-items-center" role="alert">
-            <i class="fa fa-exclamation-circle me-3" style="font-size: 24px;"></i>
+            <i class="fa fa-exclamation-circle me-3 tipowerup-installer__icon-lg"></i>
             <div>
                 <strong>{{ lang('tipowerup.installer::default.error_connection_failed') }}</strong>
                 <p class="mb-0 small mt-1">{{ $errorMessage }}</p>
@@ -32,20 +30,18 @@
             $defaultColor = $defaultColors[$packageData['type'] ?? 'extension'] ?? '#3B82F6';
         @endphp
 
-        {{-- Package Header --}}
         <div class="d-flex align-items-start mb-4">
-            {{-- Icon --}}
             @if(is_array($icon) && !empty($icon['url']))
                 <img src="{{ $icon['url'] }}" alt="{{ $packageData['name'] }}"
-                     style="width: 64px; height: 64px; border-radius: 0.5rem; object-fit: cover;" class="me-3">
+                     class="tipowerup-installer__detail-icon-img me-3">
             @elseif(is_array($icon) && !empty($icon['class']))
-                <div class="me-3 d-flex align-items-center justify-content-center"
-                     style="width: 64px; height: 64px; border-radius: 0.5rem; background: {{ $icon['background_color'] ?? $defaultColor }}; color: {{ $icon['color'] ?? '#fff' }}; font-size: 1.5rem;">
+                <div class="me-3 d-flex align-items-center justify-content-center tipowerup-installer__detail-icon"
+                     style="background: {{ $icon['background_color'] ?? $defaultColor }}; color: {{ $icon['color'] ?? '#fff' }}; font-size: 1.5rem;">
                     <i class="{{ $icon['class'] }}"></i>
                 </div>
             @else
-                <div class="me-3 d-flex align-items-center justify-content-center"
-                     style="width: 64px; height: 64px; border-radius: 0.5rem; background: {{ $defaultColor }}; color: #fff; font-size: 1.25rem; font-weight: 700;">
+                <div class="me-3 d-flex align-items-center justify-content-center tipowerup-installer__detail-icon tipowerup-installer__detail-icon-text"
+                     style="background: {{ $defaultColor }};">
                     {{ strtoupper(substr($packageData['name'], 0, 2)) }}
                 </div>
             @endif
@@ -91,7 +87,7 @@
                     </span>
                     @if(!($packageData['local'] ?? false) && !($packageData['purchased'] ?? false))
                         @if(($packageData['price'] ?? 0) > 0)
-                            <span class="fw-semibold" style="color: var(--ti-primary, #3B82F6);">
+                            <span class="fw-semibold tipowerup-installer__price-highlight">
                                 {{ $packageData['price_formatted'] ?? ('$' . number_format($packageData['price'], 2)) }}
                             </span>
                         @else
@@ -102,7 +98,6 @@
             </div>
         </div>
 
-        {{-- Tab Navigation --}}
         <ul class="nav nav-tabs mb-3" role="tablist">
             <li class="nav-item" role="presentation">
                 <button wire:click="switchDetailTab('description')" type="button"
@@ -136,7 +131,6 @@
             @endif
         </ul>
 
-        {{-- Tab Content --}}
         <div class="tab-content">
             @if($activeDetailTab === 'description')
                 <div class="tab-pane fade show active">
@@ -160,15 +154,11 @@
                         }
                     }
                 @endphp
-                <div class="tab-pane fade show active" x-data="{
-                    open: false,
-                    current: 0,
-                    images: @js($allImages->values()->all()),
-                    show(index) { this.current = index; this.open = true; },
-                    close() { this.open = false; },
-                    prev() { this.current = (this.current - 1 + this.images.length) % this.images.length; },
-                    next() { this.current = (this.current + 1) % this.images.length; }
-                }" @keydown.escape.window="open && close()" @keydown.left.window="open && prev()" @keydown.right.window="open && next()">
+                <div class="tab-pane fade show active"
+                     x-data="lightbox(@js($allImages->values()->all()))"
+                     @keydown.escape.window="open && close()"
+                     @keydown.left.window="open && prev()"
+                     @keydown.right.window="open && next()">
                     @if($allImages->isNotEmpty())
                         <div class="tipowerup-installer__screenshot-grid">
                             @foreach($allImages as $index => $screenshot)
@@ -185,29 +175,24 @@
                              x-transition:leave="tipowerup-installer__lightbox-leave"
                              class="tipowerup-installer__lightbox" @click.self="close()">
 
-                            {{-- Close Button --}}
                             <button @click="close()" class="tipowerup-installer__lightbox-close" type="button" aria-label="Close">
                                 <i class="fa fa-times"></i>
                             </button>
 
-                            {{-- Previous Button --}}
                             <button x-show="images.length > 1" @click="prev()"
                                     class="tipowerup-installer__lightbox-nav tipowerup-installer__lightbox-nav--prev"
                                     type="button" aria-label="Previous">
                                 <i class="fa fa-chevron-left"></i>
                             </button>
 
-                            {{-- Image --}}
                             <img :src="images[current]" alt="Screenshot" class="tipowerup-installer__lightbox-image">
 
-                            {{-- Next Button --}}
                             <button x-show="images.length > 1" @click="next()"
                                     class="tipowerup-installer__lightbox-nav tipowerup-installer__lightbox-nav--next"
                                     type="button" aria-label="Next">
                                 <i class="fa fa-chevron-right"></i>
                             </button>
 
-                            {{-- Counter --}}
                             <div x-show="images.length > 1" class="tipowerup-installer__lightbox-counter">
                                 <span x-text="(current + 1) + ' / ' + images.length"></span>
                             </div>

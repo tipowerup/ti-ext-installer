@@ -1,5 +1,4 @@
 <div wire:poll.1s="pollProgress" class="tipowerup-installer__progress-modal">
-    {{-- Header --}}
     <div class="mb-4">
         <h5 class="mb-1">
             @if($isCompleted)
@@ -18,7 +17,6 @@
         </h5>
     </div>
 
-    {{-- Progress Bar --}}
     @if(!$isCompleted && !$hasFailed)
         <div class="tipowerup-installer__progress-bar mb-4">
             <div class="tipowerup-installer__progress-fill" style="width: {{ $progressPercent }}%"></div>
@@ -26,7 +24,6 @@
         <p class="text-center text-muted small mb-4">{{ $progressPercent }}%</p>
     @endif
 
-    {{-- Progress Steps --}}
     <ul class="tipowerup-installer__progress-steps">
         @foreach($stages as $stage)
             <li class="tipowerup-installer__progress-step tipowerup-installer__progress-step--{{ $stage['status'] }}"
@@ -39,7 +36,7 @@
                     @elseif($stage['status'] === 'error')
                         <i class="fa fa-times"></i>
                     @else
-                        <i class="fa fa-circle" style="font-size: 8px;"></i>
+                        <i class="fa fa-circle tipowerup-installer__progress-dot"></i>
                     @endif
                 </div>
                 <div class="flex-grow-1">
@@ -58,7 +55,6 @@
         @endforeach
     </ul>
 
-    {{-- Status Message --}}
     @if($statusMessage && !$isCompleted && !$hasFailed && !$isCancelled)
         <div class="alert alert-info mt-4 mb-0" role="alert">
             <i class="fa fa-info-circle me-2"></i>
@@ -66,7 +62,6 @@
         </div>
     @endif
 
-    {{-- Error Message --}}
     @if($hasFailed && $errorMessage)
         <div class="alert alert-danger mt-4" role="alert">
             <i class="fa fa-exclamation-triangle me-2"></i>
@@ -83,7 +78,6 @@
         </div>
     @endif
 
-    {{-- Success Message --}}
     @if($isCompleted)
         <div class="alert alert-success mt-4" role="alert">
             <i class="fa fa-check-circle me-2"></i>
@@ -91,7 +85,6 @@
         </div>
     @endif
 
-    {{-- Action Buttons --}}
     <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
         @if($isCompleted)
             <button wire:click="closeProgress" wire:loading.attr="disabled" type="button" class="btn btn-primary">

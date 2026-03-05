@@ -2,27 +2,22 @@
     <div class="container py-3">
         <div class="row justify-content-center">
             <div class="col-lg-8">
-                {{-- Logo --}}
                 @if($this->logoDataUri)
                     <div class="text-center mb-4">
-                        <img src="{{ $this->logoDataUri }}" alt="TI PowerUp" style="max-width: 220px; height: auto;">
+                        <img src="{{ $this->logoDataUri }}" alt="TI PowerUp" class="tipowerup-installer__onboarding-logo">
                     </div>
                 @endif
 
-                {{-- Progress Indicator --}}
                 <div class="mb-4">
                     <div class="d-flex align-items-start position-relative">
-                        {{-- Progress Line --}}
-                        <div class="position-absolute" style="z-index: 0; top: 24px; left: 25%; right: 25%; height: 2px; background-color: #dee2e6;"></div>
-                        <div class="position-absolute" style="z-index: 0; top: 24px; left: 25%; height: 2px; background-color: #4a7cff;
-                            width: {{ $currentStep === 1 ? '0%' : ($currentStep === 2 ? '25%' : '50%') }};
-                            transition: width 0.3s ease;"></div>
+                        <div class="position-absolute tipowerup-installer__progress-line"></div>
+                        <div class="position-absolute tipowerup-installer__progress-line-fill"
+                             style="width: {{ $currentStep === 1 ? '0%' : ($currentStep === 2 ? '25%' : '50%') }};"></div>
 
                         {{-- Step 1 --}}
-                        <div class="d-flex flex-column align-items-center position-relative flex-fill" style="z-index: 1;">
+                        <div class="d-flex flex-column align-items-center position-relative flex-fill tipowerup-installer__step-wrapper">
                             <div class="rounded-circle d-flex align-items-center justify-content-center mb-2
-                                {{ $currentStep >= 1 ? 'bg-primary text-white' : 'bg-white text-muted' }}"
-                                 style="width: 48px; height: 48px; font-weight: 600;">
+                                {{ $currentStep >= 1 ? 'bg-primary text-white' : 'bg-white text-muted' }} tipowerup-installer__onboarding-step-circle">
                                 @if($currentStep > 1)
                                     <i class="fa fa-check"></i>
                                 @else
@@ -33,10 +28,9 @@
                         </div>
 
                         {{-- Step 2 --}}
-                        <div class="d-flex flex-column align-items-center position-relative flex-fill" style="z-index: 1;">
+                        <div class="d-flex flex-column align-items-center position-relative flex-fill tipowerup-installer__step-wrapper">
                             <div class="rounded-circle d-flex align-items-center justify-content-center mb-2
-                                {{ $currentStep >= 2 ? 'bg-primary text-white' : 'bg-white text-muted' }}"
-                                 style="width: 48px; height: 48px; font-weight: 600;">
+                                {{ $currentStep >= 2 ? 'bg-primary text-white' : 'bg-white text-muted' }} tipowerup-installer__onboarding-step-circle">
                                 @if($currentStep > 2)
                                     <i class="fa fa-check"></i>
                                 @else
@@ -47,10 +41,9 @@
                         </div>
 
                         {{-- Step 3 --}}
-                        <div class="d-flex flex-column align-items-center position-relative flex-fill" style="z-index: 1;">
+                        <div class="d-flex flex-column align-items-center position-relative flex-fill tipowerup-installer__step-wrapper">
                             <div class="rounded-circle d-flex align-items-center justify-content-center mb-2
-                                {{ $currentStep >= 3 ? 'bg-primary text-white' : 'bg-white text-muted' }}"
-                                 style="width: 48px; height: 48px; font-weight: 600;">
+                                {{ $currentStep >= 3 ? 'bg-primary text-white' : 'bg-white text-muted' }} tipowerup-installer__onboarding-step-circle">
                                 3
                             </div>
                             <small class="{{ $currentStep >= 3 ? 'text-dark fw-semibold' : 'text-muted' }}">Welcome</small>
@@ -58,7 +51,6 @@
                     </div>
                 </div>
 
-                {{-- Step Content --}}
                 <div class="card shadow-sm">
                     <div class="card-body p-4">
                         @if($currentStep === 1)
@@ -68,7 +60,6 @@
                                 {{ lang('tipowerup.installer::default.onboarding_health_description') }}
                             </p>
 
-                            {{-- Health Checks List --}}
                             <div class="mb-3">
                                 @foreach($healthChecks as $check)
                                     <div class="d-flex align-items-center py-2 {{ !$loop->last ? 'border-bottom' : '' }}">
@@ -94,7 +85,6 @@
                                 @endforeach
                             </div>
 
-                            {{-- Community Links --}}
                             <div class="mt-3 pt-2 border-top">
                                 <div class="d-flex flex-wrap gap-2 align-items-center">
                                     <span class="text-muted small">Need Help?</span>
@@ -108,7 +98,6 @@
                                 </div>
                             </div>
 
-                            {{-- Next Button --}}
                             <div class="mt-3">
                                 <button wire:click="proceedToApiKey" type="button"
                                         class="btn btn-primary w-100"
@@ -125,7 +114,6 @@
                                 {{ lang('tipowerup.installer::default.onboarding_api_key_description') }}
                             </p>
 
-                            {{-- PowerUp Key Input --}}
                             <div class="mb-3">
                                 <label for="apiKey" class="form-label small">PowerUp Key</label>
                                 <input wire:model.defer="apiKey" type="text" class="form-control form-control-lg"
@@ -135,7 +123,6 @@
                                 </div>
                             </div>
 
-                            {{-- Error Message --}}
                             @if($errorMessage)
                                 <div class="alert alert-danger py-2 small" role="alert">
                                     <i class="fa fa-exclamation-circle me-2"></i>
@@ -143,7 +130,6 @@
                                 </div>
                             @endif
 
-                            {{-- Verify Button --}}
                             <div class="d-flex gap-2 mt-3">
                                 <button wire:click="backToHealth" type="button" class="btn btn-outline-secondary"
                                         @if($isVerifying) disabled @endif>
@@ -169,10 +155,9 @@
                             <div class="text-center">
                                 @if($userProfile && !empty($userProfile['avatar']))
                                     <img src="{{ $userProfile['avatar'] }}" alt="{{ $userProfile['name'] }}"
-                                         class="rounded-circle mb-3" style="width: 80px; height: 80px; object-fit: cover;">
+                                         class="rounded-circle mb-3 tipowerup-installer__welcome-avatar">
                                 @else
-                                    <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3"
-                                         style="width: 80px; height: 80px; font-size: 32px; font-weight: 600;">
+                                    <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3 tipowerup-installer__welcome-avatar-fallback">
                                         {{ substr($userProfile['name'] ?? 'U', 0, 1) }}
                                     </div>
                                 @endif
