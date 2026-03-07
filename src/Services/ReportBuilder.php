@@ -52,7 +52,11 @@ class ReportBuilder
     private function getInstallerVersion(): string
     {
         if (class_exists(\Composer\InstalledVersions::class)) {
-            return \Composer\InstalledVersions::getPrettyVersion('tipowerup/ti-ext-installer') ?? 'unknown';
+            try {
+                return \Composer\InstalledVersions::getPrettyVersion('tipowerup/installer') ?? 'unknown';
+            } catch (\OutOfBoundsException) {
+                return 'unknown';
+            }
         }
 
         return 'unknown';
