@@ -1,5 +1,6 @@
 # TI PowerUp Installer
 
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/tipowerup/ti-ext-installer.svg)](https://packagist.org/packages/tipowerup/ti-ext-installer)
 ![Tests](https://github.com/tipowerup/ti-ext-installer/actions/workflows/tests.yml/badge.svg)
 [![Coverage](https://codecov.io/gh/tipowerup/ti-ext-installer/branch/main/graph/badge.svg)](https://codecov.io/gh/tipowerup/ti-ext-installer)
 ![PHP Version](https://img.shields.io/badge/php-%5E8.3-blue)
