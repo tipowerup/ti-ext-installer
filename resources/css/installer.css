@@ -2148,3 +2148,21 @@
     border-color: #3B82F6;
     background-color: #EFF6FF;
 }
+
+/* ============================================================================
+   Install Logs
+   ========================================================================= */
+
+.tipowerup-installer__logs-table th,
+.tipowerup-installer__logs-table td {
+    padding: 0.4rem 0.5rem;
+    vertical-align: middle;
+}
+
+.tipowerup-installer__logs-table .table-danger-subtle {
+    background-color: var(--ti-danger-light);
+}
+
+.tipowerup-installer .cursor-pointer {
+    cursor: pointer;
+}

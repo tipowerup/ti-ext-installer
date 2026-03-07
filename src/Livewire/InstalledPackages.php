@@ -85,7 +85,8 @@ class InstalledPackages extends Component
             $this->installedPackages = array_map(function (array $pkg) use ($licenses, $remoteIndex, $ownedCodes): array {
                 $license = $licenses->get($pkg['code']);
                 $remote = $remoteIndex[$pkg['code']] ?? null;
-                $version = $license?->version ?? $pkg['version'] ?? '0.0.0';
+                $rawVersion = $license?->version ?? $pkg['version'] ?? null;
+                $version = $rawVersion ? $this->normalizeVersion($rawVersion) : 'unknown';
 
                 return [
                     'code' => $pkg['code'],
@@ -93,13 +94,13 @@ class InstalledPackages extends Component
                     'theme_code' => $pkg['theme_code'] ?? null,
                     'name' => $remote['name'] ?? $license?->package_name ?? $pkg['name'],
                     'description' => $remote['description'] ?? $pkg['description'] ?? '',
-                    'version' => $this->normalizeVersion($version),
-                    'latest_version' => $this->normalizeVersion($remote['version'] ?? $version),
+                    'version' => $version,
+                    'latest_version' => isset($remote['version']) ? $this->normalizeVersion($remote['version']) : $version,
                     'type' => $pkg['type'],
                     'install_method' => $license?->install_method ?? 'unknown',
                     'is_active' => $pkg['is_active'],
                     'expires_at' => $license?->expires_at?->format('M j, Y'),
-                    'has_update' => $this->isNewerVersion($remote['version'] ?? $version, $version),
+                    'has_update' => $this->isNewerVersion($remote['version'] ?? '', $rawVersion ?? ''),
                     'icon' => $remote['icon'] ?? $pkg['icon'] ?? $this->getDefaultIcon($pkg['type']),
                     'is_owned' => in_array($pkg['code'], $ownedCodes, true),
                     'settings_url' => $pkg['settings_url'] ?? null,
@@ -182,7 +183,7 @@ class InstalledPackages extends Component
                 'name' => $meta['name'] ?? $code,
                 'description' => $meta['description'] ?? '',
                 'type' => 'extension',
-                'version' => $this->normalizeVersion($composerVersions[$composerName] ?? $meta['version'] ?? '0.0.0'),
+                'version' => $this->normalizeVersion($composerVersions[$composerName] ?? $meta['version'] ?? null),
                 'icon' => $this->normalizeIcon($meta['icon'] ?? null, $extensionRoot, 'extension'),
                 'is_active' => !$extensionManager->isDisabled($code),
                 'settings_url' => $settingsUrl,
@@ -205,7 +206,7 @@ class InstalledPackages extends Component
             $themeComposer = json_decode($contents, true);
             $composerName = $themeComposer['name'];
 
-            $themeVersion = $composerVersions[$composerName] ?? '0.0.0';
+            $themeVersion = $composerVersions[$composerName] ?? null;
             $themeIcon = $this->normalizeIcon($theme->icon ?? null, $themePath, 'theme');
 
             $editUrl = admin_url('themes/source/'.$code);
@@ -621,8 +622,12 @@ class InstalledPackages extends Component
     /**
      * Strip 'v' prefix from semver versions (v1.2.3 -> 1.2.3), keep dev-* as-is.
      */
-    private function normalizeVersion(string $version): string
+    private function normalizeVersion(?string $version): ?string
     {
+        if ($version === null) {
+            return null;
+        }
+
         if (preg_match('/^v(\d+\.\d+)/', $version)) {
             return substr($version, 1);
         }

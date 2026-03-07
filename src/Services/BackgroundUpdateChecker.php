@@ -54,7 +54,7 @@ class BackgroundUpdateChecker
             $updateCount = count($result['updates'] ?? []);
 
             if ($updateCount > 0) {
-                PowerUpUpdateNotification::make($updateCount)->broadcast();
+                (new PowerUpUpdateNotification($updateCount))->broadcast();
             } else {
                 $this->clearExistingUpdateNotifications();
             }

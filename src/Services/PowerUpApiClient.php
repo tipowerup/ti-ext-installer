@@ -122,6 +122,23 @@ class PowerUpApiClient
         return $this->makeRequest('GET', '/api/v1/powerup/product/'.$slug.'/download');
     }
 
+    /**
+     * Submit an issue report with environment info and install logs.
+     *
+     * @param  array<string, mixed>  $reportData
+     * @return array<string, mixed>
+     */
+    public function submitReport(array $reportData): array
+    {
+        $data = $this->makeRequest('POST', '/api/v1/powerup/report-issue', $reportData);
+
+        if (!($data['success'] ?? false)) {
+            throw new RuntimeException($data['message'] ?? 'Failed to submit report.');
+        }
+
+        return $data['data'] ?? [];
+    }
+
     public function acquireFreeProduct(string $packageCode): array
     {
         $data = $this->makeRequest('POST', '/api/v1/powerup/acquire-free', [
@@ -144,12 +161,6 @@ class PowerUpApiClient
             $attempt++;
 
             try {
-                Log::debug('PowerUp API Request', [
-                    'method' => $method,
-                    'uri' => $uri,
-                    'attempt' => $attempt,
-                ]);
-
                 $request = Http::baseUrl(config('tipowerup.installer.api_url'))
                     ->timeout($this->timeout)
                     ->acceptJson()
@@ -166,11 +177,6 @@ class PowerUpApiClient
                 };
 
                 if ($response->successful()) {
-                    Log::debug('PowerUp API Response Success', [
-                        'uri' => $uri,
-                        'status' => $response->status(),
-                    ]);
-
                     return $response->json();
                 }
 

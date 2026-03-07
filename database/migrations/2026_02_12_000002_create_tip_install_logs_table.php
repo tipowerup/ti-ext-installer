@@ -13,7 +13,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('tipowerup_install_logs', function (Blueprint $table): void {
+        Schema::create('tip_install_logs', function (Blueprint $table): void {
             $table->id();
             $table->string('package_code', 100);
             $table->enum('action', ['install', 'update', 'uninstall', 'restore']);
@@ -22,6 +22,11 @@ return new class extends Migration
             $table->string('to_version', 20)->nullable();
             $table->boolean('success');
             $table->text('error_message')->nullable();
+            $table->text('stack_trace')->nullable();
+            $table->enum('package_type', ['extension', 'theme'])->nullable();
+            $table->string('php_version', 20)->nullable();
+            $table->string('ti_version', 20)->nullable();
+            $table->integer('memory_limit_mb')->nullable();
             $table->integer('duration_seconds')->nullable();
             $table->timestamp('created_at');
 
@@ -34,6 +39,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('tipowerup_install_logs');
+        Schema::dropIfExists('tip_install_logs');
     }
 };

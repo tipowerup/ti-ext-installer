@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tipowerup\Installer\Services;
 
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -20,6 +19,7 @@ class BatchInstaller
         private readonly InstallationPipeline $pipeline,
         private readonly PowerUpApiClient $apiClient,
         private readonly HostingDetector $hostingDetector,
+        private readonly ProgressTracker $progressTracker,
     ) {}
 
     /**
@@ -35,22 +35,12 @@ class BatchInstaller
         $batchId = (string) Str::uuid();
         $onProgress ??= function (string $packageCode, string $stage, int $percent, string $message): void {};
 
-        Log::info('BatchInstaller: Starting batch installation', [
-            'batch_id' => $batchId,
-            'package_count' => count($packageCodes),
-            'packages' => $packageCodes,
-        ]);
-
         try {
             // Filter out already-installed packages
             $installed = $this->filterInstalled($packageCodes);
             $toInstall = array_diff($packageCodes, $installed);
 
             if ($toInstall === []) {
-                Log::info('BatchInstaller: All packages already installed', [
-                    'batch_id' => $batchId,
-                ]);
-
                 return array_fill_keys($packageCodes, [
                     'success' => true,
                     'error' => 'Already installed',
@@ -58,20 +48,8 @@ class BatchInstaller
                 ]);
             }
 
-            Log::info('BatchInstaller: Filtered installed packages', [
-                'batch_id' => $batchId,
-                'already_installed' => $installed,
-                'to_install' => $toInstall,
-            ]);
-
             // Build dependency groups
             $groups = $this->buildDependencyGroups(array_values($toInstall));
-
-            Log::info('BatchInstaller: Built dependency groups', [
-                'batch_id' => $batchId,
-                'group_count' => count($groups),
-                'groups' => $groups,
-            ]);
 
             // Get recommended install method
             $method = $this->hostingDetector->getRecommendedMethod();
@@ -81,12 +59,7 @@ class BatchInstaller
             $failedPackages = [];
 
             // Process each group sequentially
-            foreach ($groups as $groupIndex => $group) {
-                Log::info('BatchInstaller: Processing group '.$groupIndex, [
-                    'batch_id' => $batchId,
-                    'packages' => $group,
-                ]);
-
+            foreach ($groups as $group) {
                 foreach ($group as $packageCode) {
                     // Skip if any dependency failed
                     if ($this->hasDependencyFailure($packageCode, $failedPackages)) {
@@ -97,10 +70,6 @@ class BatchInstaller
                         ];
 
                         $failedPackages[] = $packageCode;
-
-                        Log::warning(sprintf('BatchInstaller: Skipping %s due to failed dependency', $packageCode), [
-                            'batch_id' => $batchId,
-                        ]);
 
                         continue;
                     }
@@ -121,12 +90,6 @@ class BatchInstaller
                             'version' => $result['version'] ?? null,
                         ];
 
-                        Log::info('BatchInstaller: Package installed successfully', [
-                            'batch_id' => $batchId,
-                            'package_code' => $packageCode,
-                            'version' => $result['version'] ?? null,
-                        ]);
-
                     } catch (Throwable $e) {
                         $results[$packageCode] = [
                             'success' => false,
@@ -135,12 +98,6 @@ class BatchInstaller
                         ];
 
                         $failedPackages[] = $packageCode;
-
-                        Log::error('BatchInstaller: Package installation failed', [
-                            'batch_id' => $batchId,
-                            'package_code' => $packageCode,
-                            'error' => $e->getMessage(),
-                        ]);
                     }
                 }
             }
@@ -155,25 +112,9 @@ class BatchInstaller
                 ];
             }
 
-            $successCount = count(array_filter($results, fn (array $r) => $r['success']));
-            $failureCount = count($results) - $successCount;
-
-            Log::info('BatchInstaller: Batch installation completed', [
-                'batch_id' => $batchId,
-                'total_packages' => count($results),
-                'successful' => $successCount,
-                'failed' => $failureCount,
-            ]);
-
             return $results;
 
         } catch (Throwable $e) {
-            Log::error('BatchInstaller: Batch installation failed', [
-                'batch_id' => $batchId,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
             throw $e;
         }
     }
@@ -190,7 +131,6 @@ class BatchInstaller
     {
         // Build adjacency list: package => [dependencies that are also in our install list]
         $graph = [];
-        $allDependencies = [];
 
         foreach ($packageCodes as $packageCode) {
             try {
@@ -200,8 +140,6 @@ class BatchInstaller
                 // Only include dependencies that are in our install list
                 $relevantDeps = array_intersect($dependencies, $packageCodes);
                 $graph[$packageCode] = $relevantDeps;
-
-                $allDependencies = array_merge($allDependencies, $relevantDeps);
 
             } catch (Throwable $e) {
                 Log::warning('BatchInstaller: Failed to fetch dependencies for '.$packageCode, [
@@ -300,39 +238,12 @@ class BatchInstaller
     /**
      * Get the overall batch progress percentage.
      *
+     * @param  array<string>  $packageCodes
      * @return array{overall_percent: int, packages: array<string, array{stage: string, percent: int}>}
      */
-    public function getBatchProgress(string $batchId): array
+    public function getBatchProgress(string $batchId, array $packageCodes): array
     {
-        $progressRecords = DB::table('tipowerup_install_progress')
-            ->where('batch_id', $batchId)
-            ->get();
-
-        if ($progressRecords->isEmpty()) {
-            return [
-                'overall_percent' => 0,
-                'packages' => [],
-            ];
-        }
-
-        $packages = [];
-        $totalPercent = 0;
-
-        foreach ($progressRecords as $record) {
-            $packages[$record->package_code] = [
-                'stage' => $record->stage,
-                'percent' => $record->progress_percent,
-            ];
-
-            $totalPercent += $record->progress_percent;
-        }
-
-        $overallPercent = (int) ($totalPercent / count($progressRecords));
-
-        return [
-            'overall_percent' => $overallPercent,
-            'packages' => $packages,
-        ];
+        return $this->progressTracker->getBatchProgress($batchId, $packageCodes);
     }
 
     /**

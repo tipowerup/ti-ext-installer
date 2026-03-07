@@ -510,7 +510,7 @@ Content-Type: application/json
     "package_name": "Loyalty Points System",
     "package_type": "extension",
     "version": "1.2.0",
-    "download_url": "https://pkg.tipowerup.com/loyalty-points/1.2.0.zip?token=xyz&expires=1234567890",
+    "download_url": "https://packages.tipowerup.com/loyalty-points/1.2.0.zip?token=xyz&expires=1234567890",
     "checksum": "sha256:abc123def456...",
     "auth_token": "composer-auth-token-for-private-repo",
     "expires_at": "2026-01-22T00:00:00Z",
@@ -726,7 +726,7 @@ Client                          API Server
 
 **Direct Installation:**
 ```
-https://pkg.tipowerup.com/packages/{package_code}/{version}.zip?token={token}&expires={timestamp}
+https://packages.tipowerup.com/packages/{package_code}/{version}.zip?token={token}&expires={timestamp}
 ```
 
 **Checksum Format:**

@@ -53,11 +53,6 @@ class PackageInstaller
             // Determine installation method
             $method = $forceMethod ?? $this->hostingDetector->getRecommendedMethod();
 
-            Log::info('PackageInstaller: Using installation method', [
-                'package_code' => $packageCode,
-                'method' => $method,
-            ]);
-
             // Perform installation based on method
             $result = match ($method) {
                 'composer' => $this->composerInstaller->install($packageCode, $licenseData),
@@ -111,7 +106,7 @@ class PackageInstaller
             InstallLog::logAction(
                 packageCode: $packageCode,
                 action: 'install',
-                method: $forceMethod ?? 'auto',
+                method: $forceMethod ?? $this->hostingDetector->getRecommendedMethod(),
                 extra: [
                     'success' => false,
                     'error_message' => $e->getMessage(),
@@ -159,11 +154,6 @@ class PackageInstaller
                     sprintf("Cannot determine installation method for '%s'", $packageCode)
                 );
             }
-
-            Log::info('PackageInstaller: Using update method', [
-                'package_code' => $packageCode,
-                'method' => $method,
-            ]);
 
             // Verify license is still valid
             $licenseData = $this->apiClient->verifyLicense($packageCode);
@@ -220,7 +210,7 @@ class PackageInstaller
             InstallLog::logAction(
                 packageCode: $packageCode,
                 action: 'update',
-                method: $license->install_method ?? 'unknown',
+                method: $license->install_method ?? $this->hostingDetector->getRecommendedMethod(),
                 extra: [
                     'success' => false,
                     'error_message' => $e->getMessage(),
@@ -255,18 +245,7 @@ class PackageInstaller
             // Get existing license
             $license = License::byPackage($packageCode)->first();
 
-            $method = $license?->install_method ?? $this->getInstalledMethod($packageCode);
-
-            if (!$method) {
-                throw new PackageInstallationException(
-                    sprintf("Cannot determine installation method for '%s'", $packageCode)
-                );
-            }
-
-            Log::info('PackageInstaller: Using uninstall method', [
-                'package_code' => $packageCode,
-                'method' => $method,
-            ]);
+            $method = $license?->install_method ?? $this->getInstalledMethod($packageCode) ?? 'direct';
 
             // Perform uninstall based on method
             match ($method) {
@@ -305,7 +284,7 @@ class PackageInstaller
             InstallLog::logAction(
                 packageCode: $packageCode,
                 action: 'uninstall',
-                method: $license?->install_method ?? 'unknown',
+                method: $license?->install_method ?? 'direct',
                 extra: [
                     'success' => false,
                     'error_message' => $e->getMessage(),
@@ -366,8 +345,6 @@ class PackageInstaller
     public function checkUpdates(): array
     {
         try {
-            Log::info('PackageInstaller: Checking for updates');
-
             // Get all active licenses
             $licenses = License::active()->get();
 
@@ -382,14 +359,7 @@ class PackageInstaller
             ])->toArray();
 
             // Check for updates via API
-            $updates = $this->apiClient->checkUpdates($installedPackages);
-
-            Log::info('PackageInstaller: Update check completed', [
-                'packages_checked' => count($installedPackages),
-                'updates_available' => count($updates['updates'] ?? []),
-            ]);
-
-            return $updates;
+            return $this->apiClient->checkUpdates($installedPackages);
 
         } catch (Throwable $e) {
             Log::error('PackageInstaller: Update check failed', [

@@ -65,10 +65,6 @@ class ComposerInstaller
                 '--update-with-all-dependencies',
             ], $onProgress);
 
-            Log::debug('ComposerInstaller: Composer output', [
-                'output' => $output,
-            ]);
-
             // Determine installed path
             $vendorPath = base_path('vendor/'.$packageCode);
 
@@ -130,10 +126,6 @@ class ComposerInstaller
                 '--with-dependencies',
                 '--optimize-autoloader',
             ], $onProgress);
-
-            Log::debug('ComposerInstaller: Composer output', [
-                'output' => $output,
-            ]);
 
             // Get new version after update
             $newVersion = $this->getInstalledVersion($packageCode);
@@ -337,7 +329,7 @@ class ComposerInstaller
             '--no-interaction',
         ]);
 
-        Log::info('ComposerInstaller: Added TI PowerUp repository to composer.json');
+        // Repository added to composer.json
     }
 
     /**
@@ -369,10 +361,6 @@ class ComposerInstaller
         );
 
         try {
-            Log::debug('ComposerInstaller: Running command', [
-                'command' => implode(' ', $command),
-            ]);
-
             if ($onProgress !== null) {
                 $process->start();
                 $lastPercent = 0;
@@ -464,10 +452,6 @@ class ComposerInstaller
     public function runMigrations(string $packageCode): void
     {
         try {
-            Log::debug('ComposerInstaller: Running migrations', [
-                'package_code' => $packageCode,
-            ]);
-
             $vendorPath = base_path('vendor/'.$packageCode);
             $extensionCode = $this->resolveExtensionCode($vendorPath);
 

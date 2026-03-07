@@ -81,7 +81,7 @@
     @if($isCompleted)
         <div class="alert alert-success mt-4" role="alert">
             <i class="fa fa-check-circle me-2"></i>
-            <strong>{{ lang('tipowerup.installer::default.success_installed', ['package' => $packageName]) }}</strong>
+            <strong>{{ lang($isUpdate ? 'tipowerup.installer::default.success_updated' : 'tipowerup.installer::default.success_installed', ['package' => $packageName]) }}</strong>
         </div>
     @endif
 

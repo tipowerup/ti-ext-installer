@@ -13,7 +13,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('tipowerup_licenses', function (Blueprint $table): void {
+        Schema::create('tip_licenses', function (Blueprint $table): void {
             $table->id();
             $table->string('package_code', 100)->unique();
             $table->string('package_name', 255);
@@ -24,8 +24,6 @@ return new class extends Migration
             $table->timestamp('updated_at');
             $table->timestamp('expires_at')->nullable();
             $table->boolean('is_active')->default(true);
-
-            $table->index('package_code');
         });
     }
 
@@ -34,6 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('tipowerup_licenses');
+        Schema::dropIfExists('tip_licenses');
     }
 };

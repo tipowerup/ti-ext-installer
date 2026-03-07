@@ -1,5 +1,5 @@
 {
-    "name": "tipowerup/ti-ext-installer",
+    "name": "tipowerup/installer",
     "type": "tastyigniter-package",
     "description": "Install, update, and manage TI PowerUp extensions and themes directly from your TastyIgniter admin panel. Supports shared hosting (direct extraction) and VPS (Composer).",
     "license": "MIT",
@@ -61,7 +61,7 @@
         "test:refactor-fix": "vendor/bin/rector process --ansi",
         "test:static": "vendor/bin/phpstan analyse --memory-limit=1056M --ansi",
         "test:static-fix": "vendor/bin/phpstan --generate-baseline --memory-limit=1056M --ansi",
-        "test:pest": "vendor/bin/pest",
+        "test:pest": "vendor/bin/pest --parallel",
         "test:coverage": "vendor/bin/pest --coverage --compact",
         "test": [
             "@test:lint",

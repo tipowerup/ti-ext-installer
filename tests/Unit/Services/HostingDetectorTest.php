@@ -48,7 +48,13 @@ it('parses memory limit with different units', function (): void {
 });
 
 it('determines recommended method based on capabilities', function (): void {
-    $detector = new HostingDetector;
+    $detector = new class extends HostingDetector
+    {
+        public function isComposerWritable(): bool
+        {
+            return true;
+        }
+    };
 
     $method = $detector->getRecommendedMethod();
 
@@ -103,6 +109,11 @@ it('recommends composer when all conditions met', function (): void {
         public function getMemoryLimitMB(): int
         {
             return 1024;
+        }
+
+        public function isComposerWritable(): bool
+        {
+            return true;
         }
     };
 
@@ -247,6 +258,11 @@ it('recommends composer when proc_open available and only phar composer availabl
         public function getMemoryLimitMB(): int
         {
             return 256;
+        }
+
+        public function isComposerWritable(): bool
+        {
+            return true;
         }
     };
 

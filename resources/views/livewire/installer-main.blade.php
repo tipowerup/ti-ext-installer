@@ -36,10 +36,16 @@
                         {{ lang('tipowerup.installer::default.text_description') }}
                     </p>
                 </div>
-                <button wire:click="openSettings" class="btn btn-outline-secondary btn-sm">
-                    <i class="fa fa-cog"></i>
-                    <span class="ms-1 d-none d-md-inline">Settings</span>
-                </button>
+                <div class="d-flex gap-2">
+                    <button wire:click="openInstallLogs" class="btn btn-outline-secondary btn-sm">
+                        <i class="fa fa-history"></i>
+                        <span class="ms-1 d-none d-md-inline">{{ lang('tipowerup.installer::default.logs_title') }}</span>
+                    </button>
+                    <button wire:click="openSettings" class="btn btn-outline-secondary btn-sm">
+                        <i class="fa fa-cog"></i>
+                        <span class="ms-1 d-none d-md-inline">Settings</span>
+                    </button>
+                </div>
             </div>
 
             {{-- Tab Navigation --}}
@@ -107,6 +113,17 @@
             </div>
         @endif
 
+        {{-- Install Logs Modal --}}
+        @if($showInstallLogs)
+            <div class="modal fade show d-block tipowerup-installer__modal-backdrop" tabindex="-1">
+                <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <livewire:tipowerup-installer::install-logs />
+                    </div>
+                </div>
+            </div>
+        @endif
+
         {{-- Install Progress Modal --}}
         @if($showInstallProgress)
             <div class="modal fade show d-block tipowerup-installer__modal-backdrop" tabindex="-1"
@@ -116,7 +133,8 @@
                         <div class="modal-body">
                             <livewire:tipowerup-installer::install-progress
                                 :package-code="$installPackageCode"
-                                :package-name="$installPackageName" />
+                                :package-name="$installPackageName"
+                                :is-update="$installIsUpdate" />
                         </div>
                     </div>
                 </div>

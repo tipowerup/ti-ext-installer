@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Tipowerup\Installer\Livewire;
 
 use Illuminate\Contracts\View\View;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Livewire\Component;
 use Throwable;
 use Tipowerup\Installer\Services\InstallationPipeline;
+use Tipowerup\Installer\Services\ProgressTracker;
 
 class InstallProgress extends Component
 {
@@ -45,8 +45,12 @@ class InstallProgress extends Component
         ['key' => 'finalizing', 'label' => 'Finalizing', 'status' => 'pending'],
     ];
 
-    public function mount(?string $packageCode = null, string $packageName = ''): void
+    public bool $isUpdate = false;
+
+    public function mount(?string $packageCode = null, string $packageName = '', bool $isUpdate = false): void
     {
+        $this->isUpdate = $isUpdate;
+
         if ($packageCode !== null) {
             $this->startInstall($packageCode, $packageName);
         }
@@ -77,10 +81,15 @@ class InstallProgress extends Component
 
         // Start installation in background
         $batchId = $this->batchId;
-        dispatch(function () use ($packageCode, $method, $batchId): void {
+        $isUpdate = $this->isUpdate;
+        dispatch(function () use ($packageCode, $method, $batchId, $isUpdate): void {
             try {
                 $pipeline = resolve(InstallationPipeline::class);
-                $pipeline->execute($packageCode, $method, null, $batchId);
+                if ($isUpdate) {
+                    $pipeline->executeUpdate($packageCode, $method, null, $batchId);
+                } else {
+                    $pipeline->execute($packageCode, $method, null, $batchId);
+                }
             } catch (Throwable $e) {
                 Log::error('InstallProgress: Pipeline execution failed', [
                     'package_code' => $packageCode,
@@ -96,38 +105,33 @@ class InstallProgress extends Component
             return;
         }
 
-        // Query progress from database
-        $progress = DB::table('tipowerup_install_progress')
-            ->where('batch_id', $this->batchId)
-            ->where('package_code', $this->packageCode)
-            ->orderBy('updated_at', 'desc')
-            ->first();
+        $progress = resolve(ProgressTracker::class)->get($this->batchId, $this->packageCode);
 
-        if (!$progress) {
+        if ($progress === null) {
             return;
         }
 
-        $this->currentStage = $progress->stage;
-        $this->progressPercent = $progress->progress_percent;
-        $this->statusMessage = $progress->message ?? '';
+        $this->currentStage = $progress['stage'];
+        $this->progressPercent = $progress['progress_percent'];
+        $this->statusMessage = $progress['message'] ?? '';
 
         // Update stages based on current stage
-        $this->updateStages($progress->stage, $progress->failed_stage ?? null);
+        $this->updateStages($progress['stage'], $progress['failed_stage'] ?? null);
 
         // Check for completion, cancellation, or failure
-        if ($progress->stage === 'complete') {
+        if ($progress['stage'] === 'complete') {
             $this->isCompleted = true;
-        } elseif ($progress->stage === 'cancelled') {
+        } elseif ($progress['stage'] === 'cancelled') {
             $this->isCancelled = true;
             $this->hasFailed = true;
             $this->errorMessage = $this->getErrorMessage('cancelled');
-        } elseif ($progress->stage === 'failed') {
+        } elseif ($progress['stage'] === 'failed') {
             $this->hasFailed = true;
-            $errorCode = $progress->error_code ?? 'unknown';
+            $errorCode = $progress['error_code'] ?? 'unknown';
             $this->errorMessage = $this->getErrorMessage($errorCode);
 
-            if (!empty($progress->error)) {
-                $this->errorDetail = $progress->error;
+            if (!empty($progress['error'])) {
+                $this->errorDetail = $progress['error'];
             }
         }
     }
@@ -139,6 +143,10 @@ class InstallProgress extends Component
 
     private function updateStages(string $currentStage, ?string $failedStage = null): void
     {
+        if ($currentStage === 'updating') {
+            $currentStage = 'installing';
+        }
+
         $stageOrder = ['preparing', 'compatibility', 'backup', 'installing', 'migrating', 'finalizing'];
         $currentIndex = array_search($currentStage, $stageOrder, true);
 
@@ -211,18 +219,7 @@ class InstallProgress extends Component
             return;
         }
 
-        DB::table('tipowerup_install_progress')->updateOrInsert(
-            [
-                'batch_id' => $this->batchId,
-                'package_code' => $this->packageCode,
-            ],
-            [
-                'stage' => 'cancelled',
-                'error_code' => 'cancelled',
-                'failed_stage' => $this->currentStage,
-                'updated_at' => now(),
-            ]
-        );
+        resolve(ProgressTracker::class)->cancel($this->batchId, $this->packageCode, $this->currentStage);
     }
 
     public function getCanCancelProperty(): bool

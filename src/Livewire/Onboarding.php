@@ -157,7 +157,7 @@ class Onboarding extends Component
         $this->dispatch('onboarding-completed');
 
         // Redirect to main installer page
-        $this->redirect(admin_url('tipowerup/installer/installer'));
+        $this->redirect(admin_url('tipowerup/installer'));
     }
 
     public function backToHealth(): void

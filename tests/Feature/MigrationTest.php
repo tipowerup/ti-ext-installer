@@ -9,9 +9,8 @@ uses(TestsMigrations::class);
 $migrationPath = dirname(__DIR__, 2).'/database/migrations';
 
 $tables = [
-    'tipowerup_licenses',
-    'tipowerup_install_logs',
-    'tipowerup_install_progress',
+    'tip_licenses',
+    'tip_install_logs',
 ];
 
 it('creates and rolls back all tables', function () use ($migrationPath, $tables): void {

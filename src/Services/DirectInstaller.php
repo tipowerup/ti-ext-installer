@@ -308,11 +308,6 @@ class DirectInstaller
         $tmpFile = $tmpDir.'/'.str_replace('/', '-', $packageCode).'-'.uniqid().'.zip';
 
         try {
-            Log::debug('DirectInstaller: Downloading package', [
-                'url' => $url,
-                'target' => $tmpFile,
-            ]);
-
             $apiKey = params('tipowerup_api_key', '');
 
             $headers = [
@@ -323,7 +318,6 @@ class DirectInstaller
             // Resume partial download if tmp file exists from a previous attempt
             if (File::exists($tmpFile) && ($existingSize = filesize($tmpFile)) > 0) {
                 $headers['Range'] = 'bytes='.$existingSize.'-';
-                Log::debug('DirectInstaller: Resuming download', ['from_byte' => $existingSize]);
             }
 
             $response = Http::withToken($apiKey)
@@ -360,11 +354,6 @@ class DirectInstaller
                     'Downloaded file is empty'
                 );
             }
-
-            Log::debug('DirectInstaller: Download complete', [
-                'package_code' => $packageCode,
-                'file_size' => $fileSize,
-            ]);
 
             return $tmpFile;
 
@@ -572,9 +561,6 @@ class DirectInstaller
     {
         // Migrations are already handled by registerWithTI() → ExtensionManager::installExtension()
         // which calls UpdateManager::migrateExtension() internally.
-        Log::debug('DirectInstaller: Skipping runMigrations (handled by registerWithTI)', [
-            'package_code' => $packageCode,
-        ]);
     }
 
     /**
@@ -672,10 +658,6 @@ class DirectInstaller
 
             File::copyDirectory($assetsSource, $assetsTarget);
 
-            Log::debug('DirectInstaller: Theme assets published', [
-                'package_code' => $packageCode,
-                'target' => $assetsTarget,
-            ]);
         } catch (Throwable $e) {
             Log::warning('DirectInstaller: Failed to publish theme assets', [
                 'package_code' => $packageCode,

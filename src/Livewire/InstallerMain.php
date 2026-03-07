@@ -21,11 +21,15 @@ class InstallerMain extends Component
 
     public array $selectedPackageData = [];
 
+    public bool $showInstallLogs = false;
+
     public bool $showInstallProgress = false;
 
     public ?string $installPackageCode = null;
 
     public string $installPackageName = '';
+
+    public bool $installIsUpdate = false;
 
     /**
      * @var array<int, array{code: string, name: string, installed: bool, manage_url: string}>
@@ -110,6 +114,16 @@ class InstallerMain extends Component
     {
         $this->installPackageCode = $packageCode;
         $this->installPackageName = $packageName;
+        $this->installIsUpdate = false;
+        $this->showInstallProgress = true;
+    }
+
+    #[On('begin-update')]
+    public function onBeginUpdate($packageCode): void
+    {
+        $this->installPackageCode = $packageCode;
+        $this->installPackageName = '';
+        $this->installIsUpdate = true;
         $this->showInstallProgress = true;
     }
 
@@ -119,6 +133,7 @@ class InstallerMain extends Component
         $this->showInstallProgress = false;
         $this->installPackageCode = null;
         $this->installPackageName = '';
+        $this->installIsUpdate = false;
         $this->checkCoreExtensions();
     }
 
@@ -126,6 +141,22 @@ class InstallerMain extends Component
     public function onViewPackageDetail(string $packageCode, array $packageData = []): void
     {
         $this->viewPackageDetail($packageCode, $packageData);
+    }
+
+    public function openInstallLogs(): void
+    {
+        $this->showInstallLogs = true;
+    }
+
+    public function closeInstallLogs(): void
+    {
+        $this->showInstallLogs = false;
+    }
+
+    #[On('install-logs-closed')]
+    public function onInstallLogsClosed(): void
+    {
+        $this->closeInstallLogs();
     }
 
     public function render(): View

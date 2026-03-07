@@ -121,13 +121,13 @@ describe('install', function (): void {
         createTestZip($zipPath, extensionZipFiles());
 
         Http::fake([
-            'pkg.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
+            'packages.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
         ]);
 
         $installer = directInstallerWithMockedTI();
 
         $result = $installer->install('tipowerup/ti-ext-darkmode', [
-            'download_url' => 'https://pkg.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
+            'download_url' => 'https://packages.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
             'package_type' => 'extension',
             'version' => '1.0.0',
         ]);
@@ -149,7 +149,7 @@ describe('install', function (): void {
         createTestZip($zipPath, themeZipFiles());
 
         Http::fake([
-            'pkg.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
+            'packages.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
         ]);
 
         $installer = directInstallerWithMockedTI(null, function ($mock): void {
@@ -158,7 +158,7 @@ describe('install', function (): void {
         });
 
         $result = $installer->install('tipowerup/ti-theme-darktheme', [
-            'download_url' => 'https://pkg.tipowerup.com/tipowerup/ti-theme-darktheme/1.0.0',
+            'download_url' => 'https://packages.tipowerup.com/tipowerup/ti-theme-darktheme/1.0.0',
             'package_type' => 'theme',
             'version' => '2.0.0',
         ]);
@@ -188,7 +188,7 @@ describe('install', function (): void {
 
     it('throws when download fails with an HTTP error', function (): void {
         Http::fake([
-            'pkg.tipowerup.com/*' => Http::response('Internal Server Error', 500),
+            'packages.tipowerup.com/*' => Http::response('Internal Server Error', 500),
         ]);
 
         // TI managers are never reached when download fails - use a plain installer instance
@@ -200,7 +200,7 @@ describe('install', function (): void {
 
         try {
             $installer->install('tipowerup/ti-ext-darkmode', [
-                'download_url' => 'https://pkg.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
+                'download_url' => 'https://packages.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
                 'package_type' => 'extension',
                 'version' => '1.0.0',
             ]);
@@ -219,13 +219,13 @@ describe('install', function (): void {
         createTestZip($zipPath, extensionZipFiles());
 
         Http::fake([
-            'pkg.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
+            'packages.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
         ]);
 
         $installer = directInstallerWithMockedTI();
 
         expect(fn () => $installer->install('tipowerup/ti-ext-darkmode', [
-            'download_url' => 'https://pkg.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
+            'download_url' => 'https://packages.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
             'package_type' => 'extension',
             'version' => '1.0.0',
             'checksum' => 'sha256:0000000000000000000000000000000000000000000000000000000000000000',
@@ -242,13 +242,13 @@ describe('install', function (): void {
         createTestZip($zipPath, extensionZipFiles());
 
         Http::fake([
-            'pkg.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
+            'packages.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
         ]);
 
         $installer = directInstallerWithMockedTI();
 
         $result = $installer->install('tipowerup/ti-ext-darkmode', [
-            'download_url' => 'https://pkg.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
+            'download_url' => 'https://packages.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
             'package_type' => 'extension',
             'version' => '1.0.0',
             // no checksum key
@@ -266,13 +266,13 @@ describe('install', function (): void {
         $correctChecksum = 'sha256:'.hash_file('sha256', $zipPath);
 
         Http::fake([
-            'pkg.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
+            'packages.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
         ]);
 
         $installer = directInstallerWithMockedTI();
 
         $result = $installer->install('tipowerup/ti-ext-darkmode', [
-            'download_url' => 'https://pkg.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
+            'download_url' => 'https://packages.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
             'package_type' => 'extension',
             'version' => '1.0.0',
             'checksum' => $correctChecksum,
@@ -292,13 +292,13 @@ describe('install', function (): void {
         ]);
 
         Http::fake([
-            'pkg.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
+            'packages.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
         ]);
 
         $installer = directInstallerWithMockedTI();
 
         expect(fn () => $installer->install('tipowerup/ti-ext-darkmode', [
-            'download_url' => 'https://pkg.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
+            'download_url' => 'https://packages.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
             'package_type' => 'extension',
             'version' => '1.0.0',
         ]))->toThrow(
@@ -316,13 +316,13 @@ describe('install', function (): void {
         ]);
 
         Http::fake([
-            'pkg.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
+            'packages.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
         ]);
 
         $installer = directInstallerWithMockedTI();
 
         expect(fn () => $installer->install('tipowerup/ti-theme-darktheme', [
-            'download_url' => 'https://pkg.tipowerup.com/tipowerup/ti-theme-darktheme/1.0.0',
+            'download_url' => 'https://packages.tipowerup.com/tipowerup/ti-theme-darktheme/1.0.0',
             'package_type' => 'theme',
             'version' => '1.0.0',
         ]))->toThrow(
@@ -340,7 +340,7 @@ describe('install', function (): void {
         $capturedTmpFile = null;
 
         Http::fake([
-            'pkg.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
+            'packages.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
         ]);
 
         // Intercept the tmp file path via a progress callback side effect — we
@@ -348,7 +348,7 @@ describe('install', function (): void {
         $installer = directInstallerWithMockedTI();
 
         $installer->install('tipowerup/ti-ext-darkmode', [
-            'download_url' => 'https://pkg.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
+            'download_url' => 'https://packages.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
             'package_type' => 'extension',
             'version' => '1.0.0',
         ]);
@@ -366,7 +366,7 @@ describe('install', function (): void {
         createTestZip($zipPath, extensionZipFiles());
 
         Http::fake([
-            'pkg.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
+            'packages.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
         ]);
 
         $installer = directInstallerWithMockedTI();
@@ -375,7 +375,7 @@ describe('install', function (): void {
         $installer->install(
             'tipowerup/ti-ext-darkmode',
             [
-                'download_url' => 'https://pkg.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
+                'download_url' => 'https://packages.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
                 'package_type' => 'extension',
                 'version' => '1.0.0',
             ],
@@ -397,7 +397,7 @@ describe('install', function (): void {
         $installer = new DirectInstaller;
 
         expect(fn () => $installer->install('tipowerup.darkmode', [
-            'download_url' => 'https://pkg.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
+            'download_url' => 'https://packages.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
             'package_type' => 'extension',
             'version' => '1.0.0',
         ]))->toThrow(InvalidArgumentException::class);
@@ -408,13 +408,13 @@ describe('install', function (): void {
         createTestZip($zipPath, extensionZipFiles(), 'tipowerup-ti-ext-darkmode-abc123/');
 
         Http::fake([
-            'pkg.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
+            'packages.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
         ]);
 
         $installer = directInstallerWithMockedTI();
 
         $result = $installer->install('tipowerup/ti-ext-darkmode', [
-            'download_url' => 'https://pkg.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
+            'download_url' => 'https://packages.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
             'package_type' => 'extension',
             'version' => '1.0.0',
         ]);
@@ -435,13 +435,13 @@ describe('install', function (): void {
         ]);
 
         Http::fake([
-            'pkg.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
+            'packages.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
         ]);
 
         $installer = directInstallerWithMockedTI();
 
         $result = $installer->install('tipowerup/ti-ext-darkmode', [
-            'download_url' => 'https://pkg.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
+            'download_url' => 'https://packages.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
             'package_type' => 'extension',
             'version' => '1.0.0',
         ]);
@@ -469,7 +469,7 @@ describe('update', function (): void {
         createTestZip($zipPath, extensionZipFiles());
 
         Http::fake([
-            'pkg.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
+            'packages.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
         ]);
 
         // Track whether a backup existed when runMigrations is called (which happens after backup creation)
@@ -493,7 +493,7 @@ describe('update', function (): void {
         app()->instance(ThemeManager::class, \Mockery::mock(ThemeManager::class));
 
         $installer->update('tipowerup/ti-ext-darkmode', [
-            'download_url' => 'https://pkg.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
+            'download_url' => 'https://packages.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
             'package_type' => 'extension',
             'version' => '2.0.0',
             'current_version' => '1.0.0',
@@ -518,13 +518,13 @@ describe('update', function (): void {
         ]);
 
         Http::fake([
-            'pkg.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
+            'packages.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
         ]);
 
         $installer = directInstallerWithMockedTI();
 
         expect(fn () => $installer->update('tipowerup/ti-ext-darkmode', [
-            'download_url' => 'https://pkg.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
+            'download_url' => 'https://packages.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
             'package_type' => 'extension',
             'version' => '2.0.0',
             'current_version' => '1.0.0',
@@ -547,7 +547,7 @@ describe('update', function (): void {
         createTestZip($zipPath, extensionZipFiles());
 
         Http::fake([
-            'pkg.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
+            'packages.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
         ]);
 
         // Capture the exact backup path by overriding runMigrations
@@ -572,7 +572,7 @@ describe('update', function (): void {
         app()->instance(ThemeManager::class, \Mockery::mock(ThemeManager::class));
 
         $installer->update('tipowerup/ti-ext-darkmode', [
-            'download_url' => 'https://pkg.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
+            'download_url' => 'https://packages.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
             'package_type' => 'extension',
             'version' => '2.0.0',
             'current_version' => '1.0.0',
@@ -590,13 +590,13 @@ describe('update', function (): void {
         createTestZip($zipPath, extensionZipFiles());
 
         Http::fake([
-            'pkg.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
+            'packages.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
         ]);
 
         $installer = directInstallerWithMockedTI();
 
         $result = $installer->update('tipowerup/ti-ext-darkmode', [
-            'download_url' => 'https://pkg.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
+            'download_url' => 'https://packages.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
             'package_type' => 'extension',
             'version' => '2.0.0',
         ]);
@@ -617,7 +617,7 @@ describe('update', function (): void {
         createTestZip($zipPath, extensionZipFiles());
 
         Http::fake([
-            'pkg.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
+            'packages.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
         ]);
 
         // Make the installer subclass so we can override runMigrations to throw
@@ -642,7 +642,7 @@ describe('update', function (): void {
         }));
 
         expect(fn () => $installer->update('tipowerup/ti-ext-darkmode', [
-            'download_url' => 'https://pkg.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
+            'download_url' => 'https://packages.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
             'package_type' => 'extension',
             'version' => '2.0.0',
             'current_version' => '1.0.0',
@@ -659,13 +659,13 @@ describe('update', function (): void {
         createTestZip($zipPath, extensionZipFiles());
 
         Http::fake([
-            'pkg.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
+            'packages.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
         ]);
 
         $installer = directInstallerWithMockedTI();
 
         $result = $installer->update('tipowerup/ti-ext-darkmode', [
-            'download_url' => 'https://pkg.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
+            'download_url' => 'https://packages.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
             'package_type' => 'extension',
             'version' => '2.0.0',
             'current_version' => '1.0.0',
@@ -850,15 +850,6 @@ describe('validateDownloadUrl', function (): void {
         };
     }
 
-    it('allows pkg.tipowerup.com', function (): void {
-        $installer = makeInstallerWithUrlValidator();
-
-        // Should not throw
-        $installer->exposedValidateDownloadUrl('https://pkg.tipowerup.com/path/to/package.zip');
-
-        expect(true)->toBeTrue();
-    });
-
     it('allows packages.tipowerup.com', function (): void {
         $installer = makeInstallerWithUrlValidator();
 
@@ -867,18 +858,10 @@ describe('validateDownloadUrl', function (): void {
         expect(true)->toBeTrue();
     });
 
-    it('allows api.tipowerup.com', function (): void {
-        $installer = makeInstallerWithUrlValidator();
-
-        $installer->exposedValidateDownloadUrl('https://api.tipowerup.com/v1/download/package.zip');
-
-        expect(true)->toBeTrue();
-    });
-
     it('rejects plain HTTP URLs', function (): void {
         $installer = makeInstallerWithUrlValidator();
 
-        expect(fn () => $installer->exposedValidateDownloadUrl('http://pkg.tipowerup.com/package.zip'))
+        expect(fn () => $installer->exposedValidateDownloadUrl('http://packages.tipowerup.com/package.zip'))
             ->toThrow(PackageInstallationException::class, 'Only HTTPS download URLs are allowed');
     });
 

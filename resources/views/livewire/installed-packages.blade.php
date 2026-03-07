@@ -167,6 +167,9 @@
                                                     @if(!$package['is_owned'])
                                                         <i class="fa fa-exclamation-triangle text-warning ms-1 tipowerup-installer__icon-xxs"
                                                            title="{{ lang('tipowerup.installer::default.my_powerups_not_owned_tooltip') }}"></i>
+                                                    @elseif($package['version'] === 'unknown')
+                                                        <i class="fa fa-info-circle text-info ms-1 tipowerup-installer__icon-xxs"
+                                                           title="{{ lang('tipowerup.installer::default.installed_unknown_version') }}"></i>
                                                     @endif
                                                 </h6>
                                                 <div class="tipowerup-installer__package-version text-muted">
@@ -175,7 +178,7 @@
                                                             {{ $package['version'] }} &rarr; {{ $package['latest_version'] }}
                                                         </span>
                                                     @else
-                                                        {{ lang('tipowerup.installer::default.installed_version', ['version' => $package['version']]) }}
+                                                        {{ lang('tipowerup.installer::default.installed_version', ['version' => $package['version'] === 'unknown' ? $package['version'] : 'v'.$package['version']]) }}
                                                     @endif
                                                 </div>
                                             </div>
@@ -346,6 +349,9 @@
                                                         @if(!$package['is_owned'])
                                                             <i class="fa fa-exclamation-triangle text-warning ms-1 tipowerup-installer__icon-xxs"
                                                                title="{{ lang('tipowerup.installer::default.my_powerups_not_owned_tooltip') }}"></i>
+                                                        @elseif($package['version'] === 'unknown')
+                                                            <i class="fa fa-info-circle text-info ms-1 tipowerup-installer__icon-xxs"
+                                                               title="{{ lang('tipowerup.installer::default.installed_unknown_version') }}"></i>
                                                         @endif
                                                     </strong>
                                                     <div class="text-muted small">
@@ -354,7 +360,7 @@
                                                                 {{ $package['version'] }} &rarr; {{ $package['latest_version'] }}
                                                             </span>
                                                         @else
-                                                            {{ lang('tipowerup.installer::default.installed_version', ['version' => $package['version']]) }}
+                                                            {{ lang('tipowerup.installer::default.installed_version', ['version' => $package['version'] === 'unknown' ? $package['version'] : 'v'.$package['version']]) }}
                                                         @endif
                                                     </div>
                                                 </div>
@@ -501,7 +507,7 @@
                                                         {{ ucfirst($package['type']) }}
                                                     </span>
                                                     @if($package['version'])
-                                                        <span class="text-muted tipowerup-installer__text-xs">v{{ $package['version'] }}</span>
+                                                        <span class="text-muted tipowerup-installer__text-xs">{{ $package['version'] === 'unknown' ? $package['version'] : 'v'.$package['version'] }}</span>
                                                     @endif
                                                 </div>
                                             </div>

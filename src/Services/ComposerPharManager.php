@@ -152,11 +152,6 @@ class ComposerPharManager
             Cache::forever(self::CACHE_KEY_VERSION, $version);
             Cache::put(self::CACHE_KEY_LAST_UPDATE_CHECK, now()->timestamp, self::AUTO_UPDATE_INTERVAL_SECONDS);
 
-            Log::info('ComposerPharManager: Successfully downloaded composer.phar', [
-                'version' => $version,
-                'path' => $this->getPharPath(),
-            ]);
-
             return true;
 
         } catch (Throwable $e) {
@@ -180,7 +175,6 @@ class ComposerPharManager
         Cache::forget(self::CACHE_KEY_VERSION);
         Cache::forget(self::CACHE_KEY_LAST_UPDATE_CHECK);
 
-        Log::info('ComposerPharManager: Removed composer.phar');
     }
 
     public function getInstalledVersion(): ?string
@@ -202,11 +196,6 @@ class ComposerPharManager
             $currentVersion = $this->getInstalledVersion();
 
             if ($latestVersion !== null && $latestVersion !== $currentVersion) {
-                Log::info('ComposerPharManager: Newer version available, updating', [
-                    'current' => $currentVersion,
-                    'latest' => $latestVersion,
-                ]);
-
                 $this->download();
             } else {
                 // Just mark the check as done

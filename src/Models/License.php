@@ -12,7 +12,7 @@ class License extends Model
     /**
      * The table associated with the model.
      */
-    protected $table = 'tipowerup_licenses';
+    protected $table = 'tip_licenses';
 
     /**
      * Indicates if the model should be timestamped.

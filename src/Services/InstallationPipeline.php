@@ -6,7 +6,6 @@ namespace Tipowerup\Installer\Services;
 
 use DateTime;
 use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -31,6 +30,7 @@ class InstallationPipeline
         private readonly BackupManager $backupManager,
         private readonly CompatibilityChecker $compatibilityChecker,
         private readonly PowerUpApiClient $apiClient,
+        private readonly ProgressTracker $progressTracker,
     ) {}
 
     /**
@@ -162,7 +162,7 @@ class InstallationPipeline
             };
 
             if ($isUpdate && method_exists($installer, 'update')) {
-                $installer->update($packageCode, $composerProgress);
+                $installer->update($packageCode, $licenseData, $composerProgress);
             } else {
                 $installer->install($packageCode, $licenseData, $composerProgress);
             }
@@ -220,7 +220,7 @@ class InstallationPipeline
             $onProgress('finalizing', 95, sprintf('Logging %s...', $actionLabel));
             $this->updateProgress($batchId, $packageCode, 'finalizing', 95, sprintf('Logging %s...', $actionLabel));
 
-            $this->logSuccess($packageCode, $action, $method, $fromVersion, $toVersion, $startTime);
+            $this->logSuccess($packageCode, $action, $method, $fromVersion, $toVersion, $startTime, $packageType);
 
             $onProgress('complete', 100, ucfirst($actionLabel).' complete!');
             $this->updateProgress($batchId, $packageCode, 'complete', 100, ucfirst($actionLabel).' complete!');
@@ -266,7 +266,7 @@ class InstallationPipeline
                 }
             }
 
-            $this->logFailure($packageCode, $action, $method, $e->getMessage(), $startTime);
+            $this->logFailure($packageCode, $action, $method, $e->getMessage(), $startTime, $e->getTraceAsString(), $packageType ?? null);
 
             $finalStage = $errorCode === 'cancelled' ? 'cancelled' : 'failed';
             $this->updateProgress($batchId, $packageCode, $finalStage, 0, ucfirst($actionLabel).' failed', $e->getMessage(), $errorCode, $this->currentStage);
@@ -296,8 +296,6 @@ class InstallationPipeline
                 );
             }
 
-            Log::info(sprintf("Starting uninstallation for '%s'", $packageCode));
-
             // Create backup (safety net)
             $this->backupManager->createBackup($packageCode);
 
@@ -321,8 +319,6 @@ class InstallationPipeline
             // Log success
             $this->logSuccess($packageCode, 'uninstall', $method, $existingLicense->version, null, $startTime);
 
-            Log::info(sprintf("Uninstallation completed for '%s'", $packageCode));
-
         } catch (Throwable $e) {
             Log::error(sprintf("Uninstallation failed for '%s'", $packageCode), [
                 'error' => $e->getMessage(),
@@ -330,7 +326,7 @@ class InstallationPipeline
             ]);
 
             // Log failure
-            $this->logFailure($packageCode, 'uninstall', $method, $e->getMessage(), $startTime);
+            $this->logFailure($packageCode, 'uninstall', $method, $e->getMessage(), $startTime, $e->getTraceAsString());
 
             throw new PackageInstallationException(
                 sprintf("Failed to uninstall package '%s': %s", $packageCode, $e->getMessage()),
@@ -375,12 +371,7 @@ class InstallationPipeline
      */
     private function checkCancellation(string $batchId, string $packageCode): void
     {
-        $progress = DB::table('tipowerup_install_progress')
-            ->where('batch_id', $batchId)
-            ->where('package_code', $packageCode)
-            ->first();
-
-        if ($progress && $progress->stage === 'cancelled') {
+        if ($this->progressTracker->isCancelled($batchId, $packageCode)) {
             throw new PackageInstallationException(
                 sprintf("Installation of '%s' was cancelled by user.", $packageCode)
             );
@@ -436,28 +427,15 @@ class InstallationPipeline
         ?string $errorCode = null,
         ?string $failedStage = null,
     ): void {
-        $data = [
-            'stage' => $stage,
-            'progress_percent' => $percent,
-            'message' => $message,
-            'error' => $error,
-            'updated_at' => now(),
-        ];
-
-        if ($errorCode !== null) {
-            $data['error_code'] = $errorCode;
-        }
-
-        if ($failedStage !== null) {
-            $data['failed_stage'] = $failedStage;
-        }
-
-        DB::table('tipowerup_install_progress')->updateOrInsert(
-            [
-                'batch_id' => $batchId,
-                'package_code' => $packageCode,
-            ],
-            $data
+        $this->progressTracker->update(
+            $batchId,
+            $packageCode,
+            $stage,
+            $percent,
+            $message,
+            $error,
+            $errorCode,
+            $failedStage,
         );
     }
 
@@ -470,13 +448,15 @@ class InstallationPipeline
         string $method,
         ?string $fromVersion,
         ?string $toVersion,
-        float $startTime
+        float $startTime,
+        ?string $packageType = null,
     ): void {
         InstallLog::logAction($packageCode, $action, $method, [
             'from_version' => $fromVersion,
             'to_version' => $toVersion,
             'success' => true,
             'duration_seconds' => (int) (microtime(true) - $startTime),
+            'package_type' => $packageType,
         ]);
     }
 
@@ -488,12 +468,16 @@ class InstallationPipeline
         string $action,
         string $method,
         string $errorMessage,
-        float $startTime
+        float $startTime,
+        ?string $stackTrace = null,
+        ?string $packageType = null,
     ): void {
         InstallLog::logAction($packageCode, $action, $method, [
             'success' => false,
             'error_message' => $errorMessage,
+            'stack_trace' => $stackTrace,
             'duration_seconds' => (int) (microtime(true) - $startTime),
+            'package_type' => $packageType,
         ]);
     }
 }

@@ -6,13 +6,15 @@ use Tipowerup\Installer\Services\BatchInstaller;
 use Tipowerup\Installer\Services\HostingDetector;
 use Tipowerup\Installer\Services\InstallationPipeline;
 use Tipowerup\Installer\Services\PowerUpApiClient;
+use Tipowerup\Installer\Services\ProgressTracker;
 
 it('can be instantiated', function (): void {
     $pipeline = $this->createMock(InstallationPipeline::class);
     $apiClient = $this->createMock(PowerUpApiClient::class);
     $hostingDetector = $this->createMock(HostingDetector::class);
 
-    $batchInstaller = new BatchInstaller($pipeline, $apiClient, $hostingDetector);
+    $progressTracker = new ProgressTracker;
+    $batchInstaller = new BatchInstaller($pipeline, $apiClient, $hostingDetector, $progressTracker);
 
     expect($batchInstaller)->toBeInstanceOf(BatchInstaller::class);
 });
@@ -22,7 +24,8 @@ it('performs topological sort correctly with no dependencies', function (): void
     $apiClient = $this->createMock(PowerUpApiClient::class);
     $hostingDetector = $this->createMock(HostingDetector::class);
 
-    $batchInstaller = new BatchInstaller($pipeline, $apiClient, $hostingDetector);
+    $progressTracker = new ProgressTracker;
+    $batchInstaller = new BatchInstaller($pipeline, $apiClient, $hostingDetector, $progressTracker);
 
     $graph = [
         'PackageA' => [],
@@ -43,7 +46,8 @@ it('performs topological sort correctly with linear dependencies', function (): 
     $apiClient = $this->createMock(PowerUpApiClient::class);
     $hostingDetector = $this->createMock(HostingDetector::class);
 
-    $batchInstaller = new BatchInstaller($pipeline, $apiClient, $hostingDetector);
+    $progressTracker = new ProgressTracker;
+    $batchInstaller = new BatchInstaller($pipeline, $apiClient, $hostingDetector, $progressTracker);
 
     // A depends on nothing, B depends on A, C depends on B
     $graph = [
@@ -62,7 +66,8 @@ it('performs topological sort correctly with diamond dependency', function (): v
     $apiClient = $this->createMock(PowerUpApiClient::class);
     $hostingDetector = $this->createMock(HostingDetector::class);
 
-    $batchInstaller = new BatchInstaller($pipeline, $apiClient, $hostingDetector);
+    $progressTracker = new ProgressTracker;
+    $batchInstaller = new BatchInstaller($pipeline, $apiClient, $hostingDetector, $progressTracker);
 
     // Diamond: A depends on nothing, B and C depend on A, D depends on B and C
     $graph = [
@@ -91,7 +96,8 @@ it('detects circular dependencies', function (): void {
     $apiClient = $this->createMock(PowerUpApiClient::class);
     $hostingDetector = $this->createMock(HostingDetector::class);
 
-    $batchInstaller = new BatchInstaller($pipeline, $apiClient, $hostingDetector);
+    $progressTracker = new ProgressTracker;
+    $batchInstaller = new BatchInstaller($pipeline, $apiClient, $hostingDetector, $progressTracker);
 
     // Circular: A depends on B, B depends on A
     $graph = [
@@ -113,7 +119,8 @@ it('groups independent packages together', function (): void {
 
     $hostingDetector = $this->createMock(HostingDetector::class);
 
-    $batchInstaller = new BatchInstaller($pipeline, $apiClient, $hostingDetector);
+    $progressTracker = new ProgressTracker;
+    $batchInstaller = new BatchInstaller($pipeline, $apiClient, $hostingDetector, $progressTracker);
 
     $packages = ['PackageA', 'PackageB', 'PackageC'];
     $groups = $batchInstaller->buildDependencyGroups($packages);
@@ -141,7 +148,8 @@ it('keeps dependent packages in later groups', function (): void {
 
     $hostingDetector = $this->createMock(HostingDetector::class);
 
-    $batchInstaller = new BatchInstaller($pipeline, $apiClient, $hostingDetector);
+    $progressTracker = new ProgressTracker;
+    $batchInstaller = new BatchInstaller($pipeline, $apiClient, $hostingDetector, $progressTracker);
 
     $packages = ['PackageA', 'PackageB', 'PackageC'];
     $groups = $batchInstaller->buildDependencyGroups($packages);
@@ -174,7 +182,8 @@ it('handles complex dependency chains', function (): void {
 
     $hostingDetector = $this->createMock(HostingDetector::class);
 
-    $batchInstaller = new BatchInstaller($pipeline, $apiClient, $hostingDetector);
+    $progressTracker = new ProgressTracker;
+    $batchInstaller = new BatchInstaller($pipeline, $apiClient, $hostingDetector, $progressTracker);
 
     $packages = ['PackageA', 'PackageB', 'PackageC', 'PackageD'];
     $groups = $batchInstaller->buildDependencyGroups($packages);
@@ -210,7 +219,8 @@ it('handles packages with dependencies outside the install list', function (): v
 
     $hostingDetector = $this->createMock(HostingDetector::class);
 
-    $batchInstaller = new BatchInstaller($pipeline, $apiClient, $hostingDetector);
+    $progressTracker = new ProgressTracker;
+    $batchInstaller = new BatchInstaller($pipeline, $apiClient, $hostingDetector, $progressTracker);
 
     // Only installing PackageA and PackageB, not ExternalPackage
     $packages = ['PackageA', 'PackageB'];

@@ -19,6 +19,7 @@ use Override;
 use Throwable;
 use Tipowerup\Installer\Livewire\InstalledPackages;
 use Tipowerup\Installer\Livewire\InstallerMain;
+use Tipowerup\Installer\Livewire\InstallLogs;
 use Tipowerup\Installer\Livewire\InstallProgress;
 use Tipowerup\Installer\Livewire\Marketplace;
 use Tipowerup\Installer\Livewire\Onboarding;
@@ -154,6 +155,7 @@ class Extension extends BaseExtension
         Livewire::component('tipowerup-installer::marketplace', Marketplace::class);
         Livewire::component('tipowerup-installer::package-detail', PackageDetail::class);
         Livewire::component('tipowerup-installer::install-progress', InstallProgress::class);
+        Livewire::component('tipowerup-installer::install-logs', InstallLogs::class);
         Livewire::component('tipowerup-installer::settings-panel', SettingsPanel::class);
     }
 
