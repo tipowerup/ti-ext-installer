@@ -6,6 +6,7 @@ namespace Tipowerup\Installer\Services;
 
 use Igniter\Main\Models\Theme;
 use Igniter\System\Classes\ExtensionManager;
+use Igniter\System\Classes\UpdateManager;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Process\Process;
@@ -456,7 +457,7 @@ class ComposerInstaller
             $extensionCode = $this->resolveExtensionCode($vendorPath);
 
             if ($extensionCode !== '') {
-                resolve(\Igniter\System\Classes\UpdateManager::class)->migrateExtension($extensionCode);
+                resolve(UpdateManager::class)->migrateExtension($extensionCode);
 
                 return;
             }

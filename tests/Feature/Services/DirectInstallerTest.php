@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Igniter\Main\Classes\Theme;
 use Igniter\Main\Classes\ThemeManager;
 use Igniter\System\Classes\BaseExtension;
 use Igniter\System\Classes\ExtensionManager;
@@ -51,7 +52,7 @@ function zipBinaryContent(string $filePath): string
 function directInstallerWithMockedTI(?callable $extensionSetup = null, ?callable $themeSetup = null): DirectInstaller
 {
     $extensionSetup ??= function ($mock): void {
-        $fakeExtension = \Mockery::mock(BaseExtension::class);
+        $fakeExtension = Mockery::mock(BaseExtension::class);
         $mock->shouldReceive('loadExtension')->zeroOrMoreTimes()->andReturn($fakeExtension);
         $mock->shouldReceive('getIdentifier')->zeroOrMoreTimes()->andReturn('tipowerup.darkmode');
         $mock->shouldReceive('installExtension')->zeroOrMoreTimes()->andReturn(true);
@@ -65,9 +66,9 @@ function directInstallerWithMockedTI(?callable $extensionSetup = null, ?callable
     };
 
     /** @phpstan-ignore-next-line */
-    app()->instance(ExtensionManager::class, \Mockery::mock(ExtensionManager::class, $extensionSetup));
+    app()->instance(ExtensionManager::class, Mockery::mock(ExtensionManager::class, $extensionSetup));
     /** @phpstan-ignore-next-line */
-    app()->instance(ThemeManager::class, \Mockery::mock(ThemeManager::class, $themeSetup));
+    app()->instance(ThemeManager::class, Mockery::mock(ThemeManager::class, $themeSetup));
 
     return new DirectInstaller;
 }
@@ -114,7 +115,7 @@ afterEach(function (): void {
         File::deleteDirectory($this->testBase);
     }
 
-    \Mockery::close();
+    Mockery::close();
 });
 
 // ===========================================================================
@@ -159,7 +160,7 @@ describe('install', function (): void {
             'packages.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
         ]);
 
-        $themeStub = new \Igniter\Main\Classes\Theme(
+        $themeStub = new Theme(
             sys_get_temp_dir(),
             ['code' => 'tipowerup-darktheme', 'name' => 'Dark Theme'],
         );
@@ -501,8 +502,8 @@ describe('update', function (): void {
             }
         };
 
-        app()->instance(ExtensionManager::class, \Mockery::mock(ExtensionManager::class));
-        app()->instance(ThemeManager::class, \Mockery::mock(ThemeManager::class));
+        app()->instance(ExtensionManager::class, Mockery::mock(ExtensionManager::class));
+        app()->instance(ThemeManager::class, Mockery::mock(ThemeManager::class));
 
         $installer->update('tipowerup/ti-ext-darkmode', [
             'download_url' => 'https://packages.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
@@ -580,8 +581,8 @@ describe('update', function (): void {
             }
         };
 
-        app()->instance(ExtensionManager::class, \Mockery::mock(ExtensionManager::class));
-        app()->instance(ThemeManager::class, \Mockery::mock(ThemeManager::class));
+        app()->instance(ExtensionManager::class, Mockery::mock(ExtensionManager::class));
+        app()->instance(ThemeManager::class, Mockery::mock(ThemeManager::class));
 
         $installer->update('tipowerup/ti-ext-darkmode', [
             'download_url' => 'https://packages.tipowerup.com/tipowerup/ti-ext-darkmode/1.0.0',
@@ -641,14 +642,14 @@ describe('update', function (): void {
             }
         };
 
-        app()->instance(ExtensionManager::class, \Mockery::mock(ExtensionManager::class, function ($mock): void {
-            $fakeExtension = \Mockery::mock(BaseExtension::class);
+        app()->instance(ExtensionManager::class, Mockery::mock(ExtensionManager::class, function ($mock): void {
+            $fakeExtension = Mockery::mock(BaseExtension::class);
             $mock->shouldReceive('loadExtension')->zeroOrMoreTimes()->andReturn($fakeExtension);
             $mock->shouldReceive('getIdentifier')->zeroOrMoreTimes()->andReturn('tipowerup.darkmode');
             $mock->shouldReceive('installExtension')->zeroOrMoreTimes()->andReturn(true);
         }));
 
-        app()->instance(ThemeManager::class, \Mockery::mock(ThemeManager::class, function ($mock): void {
+        app()->instance(ThemeManager::class, Mockery::mock(ThemeManager::class, function ($mock): void {
             $mock->shouldReceive('loadTheme')->zeroOrMoreTimes()->andReturn(null);
             $mock->shouldReceive('installTheme')->zeroOrMoreTimes()->andReturn(true);
         }));
@@ -704,10 +705,10 @@ describe('uninstall', function (): void {
         File::put($extPath.'/Extension.php', '<?php');
         File::put($extPath.'/composer.json', '{}');
 
-        app()->instance(ExtensionManager::class, \Mockery::mock(ExtensionManager::class, function ($mock): void {
+        app()->instance(ExtensionManager::class, Mockery::mock(ExtensionManager::class, function ($mock): void {
             $mock->shouldReceive('uninstallExtension')->once()->andReturn(null);
         }));
-        app()->instance(ThemeManager::class, \Mockery::mock(ThemeManager::class));
+        app()->instance(ThemeManager::class, Mockery::mock(ThemeManager::class));
 
         $installer = new DirectInstaller;
         $installer->uninstall('tipowerup/ti-ext-darkmode');
@@ -721,8 +722,8 @@ describe('uninstall', function (): void {
         File::makeDirectory($themePath, 0755, true);
         File::put($themePath.'/theme.json', '{}');
 
-        app()->instance(ExtensionManager::class, \Mockery::mock(ExtensionManager::class));
-        app()->instance(ThemeManager::class, \Mockery::mock(ThemeManager::class, function ($mock): void {
+        app()->instance(ExtensionManager::class, Mockery::mock(ExtensionManager::class));
+        app()->instance(ThemeManager::class, Mockery::mock(ThemeManager::class, function ($mock): void {
             $mock->shouldReceive('deleteTheme')->once()->andReturn(null);
         }));
 
@@ -742,8 +743,8 @@ describe('uninstall', function (): void {
         File::makeDirectory($assetsPath, 0755, true);
         File::put($assetsPath.'/app.css', '.body{}');
 
-        app()->instance(ExtensionManager::class, \Mockery::mock(ExtensionManager::class));
-        app()->instance(ThemeManager::class, \Mockery::mock(ThemeManager::class, function ($mock): void {
+        app()->instance(ExtensionManager::class, Mockery::mock(ExtensionManager::class));
+        app()->instance(ThemeManager::class, Mockery::mock(ThemeManager::class, function ($mock): void {
             $mock->shouldReceive('deleteTheme')->once()->andReturn(null);
         }));
 
@@ -763,8 +764,8 @@ describe('uninstall', function (): void {
     it('does nothing and logs a warning when the package is not found', function (): void {
         Log::spy();
 
-        app()->instance(ExtensionManager::class, \Mockery::mock(ExtensionManager::class));
-        app()->instance(ThemeManager::class, \Mockery::mock(ThemeManager::class));
+        app()->instance(ExtensionManager::class, Mockery::mock(ExtensionManager::class));
+        app()->instance(ThemeManager::class, Mockery::mock(ThemeManager::class));
 
         $installer = new DirectInstaller;
 
@@ -773,7 +774,7 @@ describe('uninstall', function (): void {
 
         Log::shouldHaveReceived('warning')->with(
             'DirectInstaller: Package not found for uninstall',
-            \Mockery::type('array')
+            Mockery::type('array')
         );
     });
 });

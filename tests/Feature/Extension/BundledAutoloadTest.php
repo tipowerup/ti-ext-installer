@@ -11,7 +11,7 @@ beforeEach(function (): void {
     File::makeDirectory($this->tmpPackagePath.'/vendor', 0755, true);
 
     $this->extension = new Extension($this->app);
-    $this->invoke = (new \ReflectionClass(Extension::class))->getMethod('bootStoragePackage');
+    $this->invoke = (new ReflectionClass(Extension::class))->getMethod('bootStoragePackage');
     $this->invoke->setAccessible(true);
 });
 

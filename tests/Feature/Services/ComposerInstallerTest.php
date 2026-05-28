@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Tipowerup\Installer\Exceptions\PackageInstallationException;
 use Tipowerup\Installer\Services\ComposerInstaller;
 
 // ---------------------------------------------------------------------------
@@ -480,10 +481,10 @@ describe('ensureRepository', function (): void {
                 $method->invoke($this);
             }
 
-            /** @throws \RuntimeException always, to detect calls */
+            /** @throws RuntimeException always, to detect calls */
             private function runComposer(array $command, ?callable $onProgress = null): string
             {
-                throw new \RuntimeException('runComposer was called unexpectedly');
+                throw new RuntimeException('runComposer was called unexpectedly');
             }
         };
 
@@ -504,17 +505,17 @@ describe('ensureRepository', function (): void {
 describe('install validation', function (): void {
     it('throws when auth_token is missing from licenseData', function (): void {
         expect(fn () => composerInstaller()->callInstall('tipowerup/ti-ext-darkmode', []))
-            ->toThrow(\Tipowerup\Installer\Exceptions\PackageInstallationException::class, 'Authentication token not provided');
+            ->toThrow(PackageInstallationException::class, 'Authentication token not provided');
     });
 
     it('throws on invalid package code format with dots', function (): void {
         expect(fn () => composerInstaller()->callInstall('tipowerup.darkmode', ['auth_token' => 'tok']))
-            ->toThrow(\InvalidArgumentException::class, 'Invalid package code format');
+            ->toThrow(InvalidArgumentException::class, 'Invalid package code format');
     });
 
     it('throws on invalid package code format with spaces', function (): void {
         expect(fn () => composerInstaller()->callInstall('tipowerup dark mode', ['auth_token' => 'tok']))
-            ->toThrow(\InvalidArgumentException::class, 'Invalid package code format');
+            ->toThrow(InvalidArgumentException::class, 'Invalid package code format');
     });
 
     it('accepts valid vendor/package format', function (): void {
@@ -522,9 +523,9 @@ describe('install validation', function (): void {
         // We just verify the exception is NOT an InvalidArgumentException.
         try {
             composerInstaller()->callInstall('tipowerup/ti-ext-darkmode', ['auth_token' => 'tok']);
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             $this->fail('Should not throw InvalidArgumentException for valid package code: '.$e->getMessage());
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // Any other exception (e.g., from ensureRepository/runComposer) is acceptable
         }
 

@@ -292,7 +292,7 @@ it('isVerifying is always false after verifyApiKey completes, even on exception'
 
     $this->mock(PowerUpApiClient::class, function ($mock): void {
         $mock->shouldReceive('setApiKey')->once();
-        $mock->shouldReceive('verifyKey')->once()->andThrow(new \RuntimeException('Network error'));
+        $mock->shouldReceive('verifyKey')->once()->andThrow(new RuntimeException('Network error'));
     });
 
     Livewire::test(Onboarding::class)

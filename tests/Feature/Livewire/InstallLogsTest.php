@@ -168,7 +168,7 @@ it('handles report submission failure', function (): void {
 
     $this->mock(PowerUpApiClient::class, function ($mock): void {
         $mock->shouldReceive('submitReport')->once()->andThrow(
-            new \RuntimeException('API is down')
+            new RuntimeException('API is down')
         );
     });
 

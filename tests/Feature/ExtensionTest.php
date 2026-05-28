@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Igniter\System\Models\Settings;
 use Tipowerup\Installer\Extension;
 
 it('registers navigation under tools', function (): void {
@@ -23,8 +24,8 @@ it('can store and retrieve params', function (): void {
     $key = 'tipowerup_installer_test';
     $value = 'test_value';
 
-    \Igniter\System\Models\Settings::set($key, $value, 'prefs');
-    $retrieved = \Igniter\System\Models\Settings::get($key, null, 'prefs');
+    Settings::set($key, $value, 'prefs');
+    $retrieved = Settings::get($key, null, 'prefs');
 
     expect($retrieved)->toBe($value);
 });

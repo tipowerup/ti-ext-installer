@@ -274,7 +274,7 @@ it('isSaving is always false after saveSettings completes, even on exception', f
 
     $this->mock(PowerUpApiClient::class, function ($mock): void {
         $mock->shouldReceive('setApiKey')->once();
-        $mock->shouldReceive('verifyKey')->once()->andThrow(new \RuntimeException('Unexpected error'));
+        $mock->shouldReceive('verifyKey')->once()->andThrow(new RuntimeException('Unexpected error'));
     });
 
     Livewire::test(SettingsPanel::class)

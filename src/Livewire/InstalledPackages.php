@@ -201,7 +201,7 @@ class InstalledPackages extends Component
                 if (!empty($theme->getFormConfig())) {
                     $customizeUrl = admin_url('themes/edit/'.$code);
                 }
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 // Theme may not have form config
             }
 

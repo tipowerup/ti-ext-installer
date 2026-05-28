@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tipowerup\Installer\Services;
 
+use Composer\InstalledVersions;
+
 class ReportBuilder
 {
     public function __construct(
@@ -51,9 +53,9 @@ class ReportBuilder
 
     private function getInstallerVersion(): string
     {
-        if (class_exists(\Composer\InstalledVersions::class)) {
+        if (class_exists(InstalledVersions::class)) {
             try {
-                return \Composer\InstalledVersions::getPrettyVersion('tipowerup/installer') ?? 'unknown';
+                return InstalledVersions::getPrettyVersion('tipowerup/installer') ?? 'unknown';
             } catch (\OutOfBoundsException) {
                 return 'unknown';
             }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tipowerup\Installer\Tests;
 
+use Tipowerup\Installer\Extension;
 use Tipowerup\Testbench\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
@@ -15,7 +16,7 @@ abstract class TestCase extends BaseTestCase
 
     protected function getExtensionProviders(): array
     {
-        return [\Tipowerup\Installer\Extension::class];
+        return [Extension::class];
     }
 
     /**
