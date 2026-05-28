@@ -35,45 +35,6 @@ final readonly class Package
     ) {}
 
     /**
-     * Build from raw extension meta on disk.
-     *
-     * @param  array<string, mixed>  $meta
-     */
-    public static function fromExtensionMeta(string $code, array $meta, string $basePath, ?string $version, bool $isActive, ?string $settingsUrl): self
-    {
-        return new self(
-            code: $code,
-            name: $meta['name'] ?? $code,
-            type: 'extension',
-            icon: Icon::fromAny($meta['icon'] ?? null, $basePath),
-            description: $meta['description'] ?? '',
-            extensionCode: $meta['code'] ?? null,
-            version: $version,
-            isActive: $isActive,
-            settingsUrl: $settingsUrl,
-        );
-    }
-
-    /**
-     * Build from a TI Theme on disk.
-     */
-    public static function fromTheme(string $composerName, string $themeCode, mixed $rawIcon, string $basePath, string $name, string $description, ?string $version, bool $isActive, string $editUrl, ?string $customizeUrl): self
-    {
-        return new self(
-            code: $composerName,
-            name: $name,
-            type: 'theme',
-            icon: Icon::fromAny($rawIcon, $basePath),
-            description: $description,
-            themeCode: $themeCode,
-            version: $version,
-            isActive: $isActive,
-            editUrl: $editUrl,
-            customizeUrl: $customizeUrl,
-        );
-    }
-
-    /**
      * Build from a marketplace API row.
      *
      * @param  array<string, mixed>  $raw

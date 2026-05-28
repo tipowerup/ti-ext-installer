@@ -668,6 +668,10 @@ class DirectInstaller
                 File::makeDirectory(dirname($target), 0755, true);
             }
 
+            if (File::isDirectory($target)) {
+                File::deleteDirectory($target);
+            }
+
             foreach ($sources as $source) {
                 File::copyDirectory($source, $target);
             }

@@ -95,17 +95,23 @@ function themeZipFiles(): array
 }
 
 // ---------------------------------------------------------------------------
-// Clean up any test artifacts after every test
+// Sandbox the local disk and public_path() into a per-test temp dir so
+// --parallel workers don't trample each other's tipowerup/{themes,extensions}
+// writes (which would otherwise share the testbench's real storage/ + public/).
 // ---------------------------------------------------------------------------
 
-afterEach(function (): void {
-    $localDisk = Storage::disk('local');
+beforeEach(function (): void {
+    $this->testBase = sys_get_temp_dir().'/tipowerup-installer-'.getmypid().'-'.uniqid();
+    config()->set('filesystems.disks.local.root', $this->testBase.'/storage');
+    app()->usePublicPath($this->testBase.'/public');
+    Storage::forgetDisk('local');
+    File::ensureDirectoryExists($this->testBase.'/storage');
+    File::ensureDirectoryExists($this->testBase.'/public');
+});
 
-    foreach (['tipowerup/tmp', 'tipowerup/extensions/tipowerup', 'tipowerup/themes', 'tipowerup/backups'] as $dir) {
-        $fullPath = $localDisk->path($dir);
-        if (File::isDirectory($fullPath)) {
-            File::deleteDirectory($fullPath);
-        }
+afterEach(function (): void {
+    if (isset($this->testBase) && File::isDirectory($this->testBase)) {
+        File::deleteDirectory($this->testBase);
     }
 
     \Mockery::close();

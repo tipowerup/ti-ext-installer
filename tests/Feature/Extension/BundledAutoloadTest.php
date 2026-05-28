@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Tipowerup\Installer\Extension;
 
 beforeEach(function (): void {
@@ -10,7 +11,7 @@ beforeEach(function (): void {
     File::makeDirectory($this->tmpPackagePath.'/vendor', 0755, true);
 
     $this->extension = new Extension($this->app);
-    $this->invoke = (new \ReflectionClass(Extension::class))->getMethod('requireBundledAutoload');
+    $this->invoke = (new \ReflectionClass(Extension::class))->getMethod('bootStoragePackage');
     $this->invoke->setAccessible(true);
 });
 
@@ -41,7 +42,15 @@ it('logs a warning instead of bubbling when the autoload file throws', function 
     $autoloadCode = "<?php throw new RuntimeException('bundled autoload exploded');\n";
     File::put($this->tmpPackagePath.'/vendor/autoload.php', $autoloadCode);
 
+    Log::spy();
+
     // The method must swallow the throw so one bad package can't break boot.
     expect(fn () => $this->invoke->invoke($this->extension, $this->tmpPackagePath))
         ->not->toThrow(Throwable::class);
+
+    Log::shouldHaveReceived('warning')
+        ->withArgs(fn (string $message, array $context): bool => str_contains($message, 'bundled vendor autoload')
+            && ($context['path'] ?? null) === $this->tmpPackagePath.'/vendor/autoload.php'
+            && str_contains((string) ($context['error'] ?? ''), 'bundled autoload exploded'))
+        ->once();
 });

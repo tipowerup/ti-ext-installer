@@ -4,13 +4,18 @@ declare(strict_types=1);
 
 namespace Tipowerup\Installer\Livewire;
 
+use DOMDocument;
+use DOMElement;
+use DOMNode;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Str;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Throwable;
 use Tipowerup\Installer\Models\License;
 use Tipowerup\Installer\Services\PowerUpApiClient;
+use Tipowerup\Installer\ValueObjects\Package;
 
 class PackageDetail extends Component
 {
@@ -24,9 +29,13 @@ class PackageDetail extends Component
 
     public string $activeDetailTab = 'description';
 
+    #[Locked]
+    public bool $installed = false;
+
     public function mount(string $packageCode, array $initialData = []): void
     {
         $this->packageCode = $packageCode;
+        $this->installed = $this->isInstalled($packageCode);
 
         if ($initialData !== [] && (!empty($initialData['local']) || ($initialData['type'] ?? '') === 'bundle')) {
             $this->applyPackageData($initialData);
@@ -64,56 +73,141 @@ class PackageDetail extends Component
 
     private function applyPackageData(array $data): void
     {
-        $this->packageData = [
+        $base = Package::fromMarketplaceApi($data)->toArray();
+
+        $this->packageData = $base + [
             'code' => $data['code'] ?? $this->packageCode,
-            'name' => $data['name'] ?? lang('tipowerup.installer::default.detail_unknown_name'),
-            'description' => $data['description'] ?? '',
-            'description_html' => $this->sanitizeHtml(Str::markdown($data['description'] ?? '')),
-            'version' => $data['version'] ?? '0.0.0',
+            'name' => $base['name'] !== '' ? $base['name'] : lang('tipowerup.installer::default.detail_unknown_name'),
+            'version' => $base['version'] ?? '0.0.0',
             'author' => $data['author'] ?? 'Unknown',
-            'type' => $data['type'] ?? 'extension',
-            'url' => $data['url'] ?? null,
-            'icon' => $data['icon'] ?? null,
+            'description_html' => self::sanitizeMarkdown($data['description'] ?? ''),
             'cover_image' => $data['cover_image'] ?? null,
             'screenshots' => $data['screenshots'] ?? [],
-            'changelog' => $data['changelog'] ?? [],
+            'changelog' => array_map(
+                fn (array $entry): array => $entry + ['notes_html' => self::sanitizeMarkdown($entry['notes'] ?? '')],
+                $data['changelog'] ?? [],
+            ),
             'requirements' => $data['requirements'] ?? [],
             'updated_at' => $data['updated_at'] ?? null,
-            'price' => $data['price'] ?? 0,
-            'price_formatted' => $data['price_formatted'] ?? null,
-            'purchased' => $data['purchased'] ?? false,
             'local' => $data['local'] ?? false,
-            'installed' => License::byPackage($data['code'] ?? $this->packageCode)->exists(),
+            'installed' => $this->installed,
         ];
     }
 
     /**
-     * Strip dangerous HTML tags from rendered Markdown, keeping safe formatting tags.
+     * Check whether a package has an existing license row. Defensively returns
+     * false if the licenses table is unreachable (fresh install before our
+     * migration has run, test DB without the schema, etc.).
      */
-    private function sanitizeHtml(string $html): string
+    private function isInstalled(string $packageCode): bool
     {
-        $cleaned = strip_tags($html, [
-            'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-            'ul', 'ol', 'li', 'a', 'strong', 'em', 'b', 'i',
-            'code', 'pre', 'blockquote', 'br', 'hr',
-            'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td',
-            'dl', 'dt', 'dd', 'sub', 'sup',
-        ]);
-
-        return $this->hideBrokenImages($cleaned);
+        try {
+            return License::byPackage($packageCode)->exists();
+        } catch (Throwable) {
+            return false;
+        }
     }
 
     /**
-     * Attach an onerror handler that hides images failing to load (e.g.
-     * README screenshots with relative paths, dead links, private repos).
+     * Render Markdown and sanitize the result through a DOM walk: only allowlisted
+     * tags survive, only allowlisted attributes per tag, and href/src must use a
+     * safe URL scheme. The output is meant to be rendered with `{!! !!}`.
      */
-    private function hideBrokenImages(string $html): string
+    public static function sanitizeMarkdown(string $markdown): string
     {
-        return (string) preg_replace(
-            '/<img\b(?![^>]*\bonerror=)([^>]*)>/i',
-            '<img$1 onerror="this.style.display=\'none\'">',
-            $html,
+        if ($markdown === '') {
+            return '';
+        }
+
+        return self::sanitizeHtml((string) Str::markdown($markdown));
+    }
+
+    private static function sanitizeHtml(string $html): string
+    {
+        $allowedTags = [
+            'p' => [], 'h1' => [], 'h2' => [], 'h3' => [], 'h4' => [], 'h5' => [], 'h6' => [],
+            'ul' => [], 'ol' => [], 'li' => [],
+            'a' => ['href', 'title'],
+            'strong' => [], 'em' => [], 'b' => [], 'i' => [],
+            'code' => [], 'pre' => [], 'blockquote' => [], 'br' => [], 'hr' => [],
+            'img' => ['src', 'alt', 'title'],
+            'table' => [], 'thead' => [], 'tbody' => [], 'tr' => [], 'th' => [], 'td' => [],
+            'dl' => [], 'dt' => [], 'dd' => [], 'sub' => [], 'sup' => [],
+        ];
+
+        $dom = new DOMDocument;
+        libxml_use_internal_errors(true);
+        $dom->loadHTML(
+            '<?xml encoding="UTF-8"><div>'.$html.'</div>',
+            LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
         );
+        libxml_clear_errors();
+
+        $root = $dom->getElementsByTagName('div')->item(0);
+        if (!$root instanceof DOMElement) {
+            return '';
+        }
+
+        self::scrubNode($root, $allowedTags);
+
+        $out = '';
+        foreach (iterator_to_array($root->childNodes) as $child) {
+            $out .= $dom->saveHTML($child);
+        }
+
+        return $out;
+    }
+
+    /**
+     * @param  array<string, list<string>>  $allowedTags
+     */
+    private static function scrubNode(DOMNode $node, array $allowedTags): void
+    {
+        foreach (iterator_to_array($node->childNodes) as $child) {
+            if (!$child instanceof DOMElement) {
+                self::scrubNode($child, $allowedTags);
+
+                continue;
+            }
+
+            $tag = strtolower($child->nodeName);
+
+            if (!array_key_exists($tag, $allowedTags)) {
+                while ($child->firstChild) {
+                    $node->insertBefore($child->firstChild, $child);
+                }
+                $node->removeChild($child);
+
+                continue;
+            }
+
+            foreach (iterator_to_array($child->attributes) as $attr) {
+                if (!in_array($attr->nodeName, $allowedTags[$tag], true)) {
+                    $child->removeAttribute($attr->nodeName);
+
+                    continue;
+                }
+
+                if (in_array($attr->nodeName, ['href', 'src'], true) && !self::isSafeUrl($attr->nodeValue ?? '')) {
+                    $child->removeAttribute($attr->nodeName);
+                }
+            }
+
+            self::scrubNode($child, $allowedTags);
+        }
+    }
+
+    private static function isSafeUrl(string $url): bool
+    {
+        $url = trim($url);
+
+        if ($url === '' || str_starts_with($url, '#') || str_starts_with($url, '/')) {
+            return true;
+        }
+
+        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+
+        return in_array($scheme, ['http', 'https', 'mailto'], true);
     }
 
     public function switchDetailTab(string $tab): void
@@ -138,6 +232,26 @@ class PackageDetail extends Component
 
     public function render(): View
     {
-        return view('tipowerup.installer::livewire.package-detail');
+        $type = $this->packageData['type'] ?? 'extension';
+        $defaultColor = match ($type) {
+            'theme' => '#F97316',
+            'bundle' => '#8B5CF6',
+            default => '#3B82F6',
+        };
+
+        $coverImage = $this->packageData['cover_image'] ?? null;
+        $screenshots = array_values(array_filter(
+            $this->packageData['screenshots'] ?? [],
+            fn ($s): bool => $s !== $coverImage,
+        ));
+        $allImages = $coverImage !== null && $coverImage !== ''
+            ? array_merge([$coverImage], $screenshots)
+            : $screenshots;
+
+        return view('tipowerup.installer::livewire.package-detail', [
+            'icon' => $this->packageData['icon'] ?? null,
+            'defaultColor' => $defaultColor,
+            'allImages' => $allImages,
+        ]);
     }
 }

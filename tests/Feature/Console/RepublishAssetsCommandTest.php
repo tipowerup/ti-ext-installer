@@ -6,6 +6,20 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function (): void {
+    // Sandbox local-disk storage AND public_path() into a per-test temp dir so
+    // --parallel workers don't trample each other (and we never touch the
+    // testbench's real storage/ or public/).
+    $this->testBase = sys_get_temp_dir().'/tipowerup-republish-'.getmypid().'-'.uniqid();
+    $sandboxStorage = $this->testBase.'/storage';
+    $sandboxPublic = $this->testBase.'/public';
+
+    config()->set('filesystems.disks.local.root', $sandboxStorage);
+    app()->usePublicPath($sandboxPublic);
+
+    // Drop any cached driver so subsequent Storage::disk('local') calls pick
+    // up the sandboxed root rather than a stale one from a prior test.
+    Storage::forgetDisk('local');
+
     $this->themesRoot = Storage::disk('local')->path('tipowerup/themes');
     $this->publicVendor = public_path('vendor');
 
@@ -14,14 +28,8 @@ beforeEach(function (): void {
 });
 
 afterEach(function (): void {
-    if (File::isDirectory($this->themesRoot)) {
-        File::deleteDirectory($this->themesRoot);
-    }
-
-    foreach (File::directories($this->publicVendor) as $dir) {
-        if (str_starts_with(basename((string) $dir), 'test-')) {
-            File::deleteDirectory($dir);
-        }
+    if (File::isDirectory($this->testBase)) {
+        File::deleteDirectory($this->testBase);
     }
 });
 

@@ -10,6 +10,7 @@ use Igniter\Flame\Support\Facades\Igniter;
 use Igniter\Main\Classes\ThemeManager;
 use Igniter\System\Classes\BaseExtension;
 use Igniter\System\Classes\ExtensionManager;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Override;
 use Throwable;
+use Tipowerup\Installer\Console\RepublishAssetsCommand;
 use Tipowerup\Installer\Livewire\InstalledPackages;
 use Tipowerup\Installer\Livewire\InstallerMain;
 use Tipowerup\Installer\Livewire\InstallLogs;
@@ -25,7 +27,6 @@ use Tipowerup\Installer\Livewire\InstallProgress;
 use Tipowerup\Installer\Livewire\Marketplace;
 use Tipowerup\Installer\Livewire\Onboarding;
 use Tipowerup\Installer\Livewire\PackageDetail;
-use Tipowerup\Installer\Console\RepublishAssetsCommand;
 use Tipowerup\Installer\Livewire\SettingsPanel;
 use Tipowerup\Installer\Services\BackgroundUpdateChecker;
 
@@ -81,6 +82,10 @@ class Extension extends BaseExtension
 
     /**
      * Auto-install on first admin request when composer require was used without `igniter:extension-install`.
+     *
+     * Guarded by an in-process latch (`once()`) plus a long-lived cache flag so a
+     * single admin request can't recurse through `installExtension()` from inside
+     * boot, and so subsequent requests don't re-probe the schema on every hit.
      */
     protected function selfInstallIfNeeded(): void
     {
@@ -88,17 +93,26 @@ class Extension extends BaseExtension
             return;
         }
 
-        try {
-            if (Schema::hasTable('tip_licenses')) {
+        once(function (): void {
+            if (Cache::get('tipowerup.installer.self_installed') === true) {
                 return;
             }
 
-            resolve(ExtensionManager::class)->installExtension('tipowerup.installer');
-        } catch (Throwable $e) {
-            Log::warning('TI PowerUp Installer self-install failed', [
-                'error' => $e->getMessage(),
-            ]);
-        }
+            try {
+                if (Schema::hasTable('tip_licenses')) {
+                    Cache::forever('tipowerup.installer.self_installed', true);
+
+                    return;
+                }
+
+                resolve(ExtensionManager::class)->installExtension('tipowerup.installer');
+                Cache::forever('tipowerup.installer.self_installed', true);
+            } catch (Throwable $e) {
+                Log::warning('TI PowerUp Installer self-install failed', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        });
     }
 
     /**

@@ -28,7 +28,6 @@ class License extends Model
         'package_type',
         'version',
         'install_method',
-        'requires_marketplace_packages',
         'installed_at',
         'updated_at',
         'expires_at',
@@ -39,7 +38,6 @@ class License extends Model
      * The attributes that should be cast.
      */
     protected $casts = [
-        'requires_marketplace_packages' => 'array',
         'installed_at' => 'datetime',
         'updated_at' => 'datetime',
         'expires_at' => 'datetime',

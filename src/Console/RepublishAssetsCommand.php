@@ -27,8 +27,16 @@ class RepublishAssetsCommand extends Command
             return self::SUCCESS;
         }
 
-        $themes = $this->argument('theme') !== null
-            ? [$themesRoot.'/'.$this->argument('theme')]
+        $themeArg = $this->argument('theme');
+
+        if ($themeArg !== null && preg_match('/^[a-z0-9][a-z0-9-]*$/', (string) $themeArg) !== 1) {
+            $this->error('Invalid theme slug. Use lowercase letters, digits, and hyphens only.');
+
+            return self::FAILURE;
+        }
+
+        $themes = $themeArg !== null
+            ? [$themesRoot.'/'.$themeArg]
             : File::directories($themesRoot);
 
         if ($themes === []) {
@@ -75,6 +83,12 @@ class RepublishAssetsCommand extends Command
             try {
                 if (!File::isDirectory(dirname($target))) {
                     File::makeDirectory(dirname($target), 0755, true);
+                }
+
+                // Clean the target before copy so stale files from a previous
+                // theme version don't linger when the new dist no longer ships them.
+                if (File::isDirectory($target)) {
+                    File::deleteDirectory($target);
                 }
 
                 foreach ($sources as $source) {

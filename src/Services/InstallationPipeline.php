@@ -31,7 +31,6 @@ class InstallationPipeline
         private readonly CompatibilityChecker $compatibilityChecker,
         private readonly PowerUpApiClient $apiClient,
         private readonly ProgressTracker $progressTracker,
-        private readonly MarketplaceDependencyResolver $dependencyResolver,
     ) {}
 
     /**
@@ -101,35 +100,8 @@ class InstallationPipeline
             $packageName = $licenseData['package_name'] ?? $packageCode;
             $packageType = $licenseData['package_type'] ?? 'extension';
             $toVersion = $licenseData['version'] ?? '0.0.0';
-            $requiresMarketplacePackages = $licenseData['requires_marketplace_packages'] ?? [];
 
             $this->checkCancellation($batchId, $packageCode);
-
-            // Resolve and install any missing marketplace dependencies BEFORE
-            // touching the main package. The backend has pre-flattened the tree,
-            // so this list is exhaustive and we don't need to recurse on it.
-            $missingDeps = $this->dependencyResolver->missing($requiresMarketplacePackages);
-            foreach ($missingDeps as $dep) {
-                $depCode = $dep['code'];
-                $depName = $dep['name'];
-                $msg = sprintf('Installing required dependency: %s', $depName);
-                $onProgress('preparing', 6, $msg);
-                $this->updateProgress($batchId, $packageCode, 'preparing', 6, $msg);
-
-                try {
-                    // Recurse via execute() so the dep gets its own license row,
-                    // its own backup, and its own progress lifecycle. Use a fresh
-                    // batchId so progress tracking for the parent isn't clobbered.
-                    $this->execute($depCode, $method);
-                } catch (Throwable $depError) {
-                    throw new PackageInstallationException(sprintf(
-                        "Failed to install required dependency '%s' for '%s': %s",
-                        $depCode,
-                        $packageCode,
-                        $depError->getMessage(),
-                    ));
-                }
-            }
 
             // COMPATIBILITY (10-20%)
             $this->currentStage = 'compatibility';
@@ -140,10 +112,9 @@ class InstallationPipeline
                 $this->compatibilityChecker->assertSatisfied($packageCode, $packageRequirements);
             } else {
                 $compatResults = $this->compatibilityChecker->check($packageCode, $packageRequirements);
-                $isSatisfied = $this->compatibilityChecker->isSatisfied($packageCode, $packageRequirements);
+                $failures = $this->compatibilityChecker->getFailures($compatResults);
 
-                if (!$isSatisfied) {
-                    $failures = $this->compatibilityChecker->getFailures($compatResults);
+                if ($failures !== []) {
                     $this->logFailure($packageCode, $action, $method, 'Compatibility check failed', $startTime);
 
                     throw PackageInstallationException::downloadFailed(
@@ -227,7 +198,6 @@ class InstallationPipeline
             if ($isUpdate) {
                 $existingLicense->update([
                     'version' => $toVersion,
-                    'requires_marketplace_packages' => $requiresMarketplacePackages,
                     'updated_at' => now(),
                 ]);
             } else {
@@ -238,7 +208,6 @@ class InstallationPipeline
                         'package_type' => $packageType,
                         'version' => $toVersion,
                         'install_method' => $method,
-                        'requires_marketplace_packages' => $requiresMarketplacePackages,
                         'installed_at' => $existingLicense?->installed_at ?? now(),
                         'updated_at' => now(),
                         'expires_at' => isset($licenseData['expires_at']) ? new DateTime($licenseData['expires_at']) : null,
@@ -324,17 +293,6 @@ class InstallationPipeline
                 throw new PackageInstallationException(
                     sprintf("Package '%s' is not installed. Cannot uninstall.", $packageCode)
                 );
-            }
-
-            // Refuse uninstall if other installed packages still depend on this one.
-            // The user must remove the dependents first.
-            $dependents = $this->dependencyResolver->dependents($packageCode);
-            if ($dependents !== []) {
-                throw new PackageInstallationException(sprintf(
-                    "Cannot uninstall '%s': it is required by %s. Uninstall the dependent package(s) first.",
-                    $packageCode,
-                    implode(', ', $dependents),
-                ));
             }
 
             // Create backup (safety net)

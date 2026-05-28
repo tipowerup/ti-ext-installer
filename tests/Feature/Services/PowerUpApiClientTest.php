@@ -34,6 +34,14 @@ it('verifyKey returns data on success', function (): void {
     expect($result)->toBe(['plan' => 'pro', 'expires_at' => '2027-01-01']);
 });
 
+it('composes request URLs by joining the configured base with the endpoint path exactly once', function (): void {
+    Http::fake(['*' => Http::response(['success' => true, 'data' => []], 200)]);
+
+    $this->client->verifyKey();
+
+    Http::assertSent(fn ($request): bool => $request->url() === 'https://api.tipowerup.com/api/v1/powerup/validate');
+});
+
 it('verifyKey throws LicenseValidationException on failure response', function (): void {
     Http::fake([
         'api.tipowerup.com/api/v1/powerup/validate' => Http::response([

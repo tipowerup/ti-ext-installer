@@ -11,7 +11,6 @@ use Tipowerup\Installer\Services\CompatibilityChecker;
 use Tipowerup\Installer\Services\ComposerInstaller;
 use Tipowerup\Installer\Services\DirectInstaller;
 use Tipowerup\Installer\Services\InstallationPipeline;
-use Tipowerup\Installer\Services\MarketplaceDependencyResolver;
 use Tipowerup\Installer\Services\PowerUpApiClient;
 use Tipowerup\Installer\Services\ProgressTracker;
 
@@ -75,7 +74,6 @@ beforeEach(function (): void {
         $this->compatibilityChecker,
         $this->apiClient,
         $this->progressTracker,
-        new MarketplaceDependencyResolver,
     );
 });
 
@@ -92,7 +90,7 @@ it('successful install creates a license record and logs success', function (): 
         ->andReturn(defaultLicenseData('2.0.0'));
 
     $this->compatibilityChecker->shouldReceive('check')->andReturn([]);
-    $this->compatibilityChecker->shouldReceive('isSatisfied')->andReturn(true);
+    $this->compatibilityChecker->shouldReceive('getFailures')->andReturn([]);
 
     // Package does not exist on disk → backup stage is skipped.
     $this->backupManager->shouldReceive('hasBackup')->andReturn(false);
@@ -166,7 +164,7 @@ it('skips backup creation when package does not exist on disk', function (): voi
 
     $this->apiClient->shouldReceive('verifyLicense')->andReturn(defaultLicenseData());
     $this->compatibilityChecker->shouldReceive('check')->andReturn([]);
-    $this->compatibilityChecker->shouldReceive('isSatisfied')->andReturn(true);
+    $this->compatibilityChecker->shouldReceive('getFailures')->andReturn([]);
 
     // BackupManager::createBackup must NOT be called.
     $this->backupManager->shouldReceive('createBackup')->never();
@@ -187,7 +185,7 @@ it('resolves DirectInstaller when method is direct', function (): void {
 
     $this->apiClient->shouldReceive('verifyLicense')->andReturn(defaultLicenseData());
     $this->compatibilityChecker->shouldReceive('check')->andReturn([]);
-    $this->compatibilityChecker->shouldReceive('isSatisfied')->andReturn(true);
+    $this->compatibilityChecker->shouldReceive('getFailures')->andReturn([]);
     $this->backupManager->shouldReceive('hasBackup')->andReturn(false);
 
     $mockDirect = Mockery::mock(DirectInstaller::class);
@@ -210,7 +208,7 @@ it('resolves ComposerInstaller when method is composer', function (): void {
 
     $this->apiClient->shouldReceive('verifyLicense')->andReturn(defaultLicenseData());
     $this->compatibilityChecker->shouldReceive('check')->andReturn([]);
-    $this->compatibilityChecker->shouldReceive('isSatisfied')->andReturn(true);
+    $this->compatibilityChecker->shouldReceive('getFailures')->andReturn([]);
     $this->backupManager->shouldReceive('hasBackup')->andReturn(false);
 
     $mockComposer = Mockery::mock(ComposerInstaller::class);
@@ -233,7 +231,7 @@ it('restores backup on failure when a backup exists', function (): void {
 
     $this->apiClient->shouldReceive('verifyLicense')->andReturn(defaultLicenseData());
     $this->compatibilityChecker->shouldReceive('check')->andReturn([]);
-    $this->compatibilityChecker->shouldReceive('isSatisfied')->andReturn(true);
+    $this->compatibilityChecker->shouldReceive('getFailures')->andReturn([]);
 
     // Backup exists so restore should be called.
     $this->backupManager->shouldReceive('hasBackup')->andReturn(true);
@@ -255,7 +253,7 @@ it('does not restore backup on cancellation', function (): void {
 
     $this->apiClient->shouldReceive('verifyLicense')->andReturn(defaultLicenseData());
     $this->compatibilityChecker->shouldReceive('check')->andReturn([]);
-    $this->compatibilityChecker->shouldReceive('isSatisfied')->andReturn(true);
+    $this->compatibilityChecker->shouldReceive('getFailures')->andReturn([]);
 
     // Build a fresh ProgressTracker mock that signals cancellation on the
     // first isCancelled check (after the compatibility stage). This avoids
@@ -269,7 +267,6 @@ it('does not restore backup on cancellation', function (): void {
         $this->compatibilityChecker,
         $this->apiClient,
         $cancelledTracker,
-        new MarketplaceDependencyResolver,
     );
 
     // Backup exists, but restore must NOT be called on cancellation.
@@ -285,7 +282,7 @@ it('logs failure on installation error', function (): void {
 
     $this->apiClient->shouldReceive('verifyLicense')->andReturn(defaultLicenseData());
     $this->compatibilityChecker->shouldReceive('check')->andReturn([]);
-    $this->compatibilityChecker->shouldReceive('isSatisfied')->andReturn(true);
+    $this->compatibilityChecker->shouldReceive('getFailures')->andReturn([]);
     $this->backupManager->shouldReceive('hasBackup')->andReturn(false);
 
     $mockInstaller = Mockery::mock(DirectInstaller::class);
@@ -420,7 +417,7 @@ it('classifies a cancellation message as cancelled and skips backup restore', fu
 
     $this->apiClient->shouldReceive('verifyLicense')->andReturn(defaultLicenseData());
     $this->compatibilityChecker->shouldReceive('check')->andReturn([]);
-    $this->compatibilityChecker->shouldReceive('isSatisfied')->andReturn(true);
+    $this->compatibilityChecker->shouldReceive('getFailures')->andReturn([]);
 
     // Build a fresh ProgressTracker mock that always reports cancellation.
     // Using a dedicated mock instance avoids conflicts with the beforeEach setup.
@@ -433,7 +430,6 @@ it('classifies a cancellation message as cancelled and skips backup restore', fu
         $this->compatibilityChecker,
         $this->apiClient,
         $cancelledTracker,
-        new MarketplaceDependencyResolver,
     );
 
     // Restore must never be called for a cancelled operation.
@@ -442,173 +438,4 @@ it('classifies a cancellation message as cancelled and skips backup restore', fu
 
     expect(fn () => $pipeline->execute($packageCode, 'direct', null, $batchId))
         ->toThrow(PackageInstallationException::class);
-});
-
-// ===========================================================================
-// Marketplace dependency resolution
-// ===========================================================================
-
-it('persists requires_marketplace_packages on a fresh install', function (): void {
-    $packageCode = 'tipowerup/ti-theme-orange';
-    $deps = [
-        ['name' => 'Toolkit', 'code' => 'tipowerup/ti-theme-toolkit', 'min_version' => '0.4.0'],
-    ];
-    $licenseData = defaultLicenseData('1.0.0') + ['requires_marketplace_packages' => $deps];
-
-    createInstalledLicense('tipowerup/ti-theme-toolkit', '0.4.2');
-
-    $this->apiClient->shouldReceive('verifyLicense')->with($packageCode)->once()->andReturn($licenseData);
-    $this->compatibilityChecker->shouldReceive('check')->andReturn([]);
-    $this->compatibilityChecker->shouldReceive('isSatisfied')->andReturn(true);
-    $this->backupManager->shouldReceive('hasBackup')->andReturn(false);
-
-    $mockInstaller = Mockery::mock(DirectInstaller::class);
-    $mockInstaller->shouldReceive('install')->once();
-    $mockInstaller->shouldReceive('runMigrations')->once();
-    $this->app->instance(DirectInstaller::class, $mockInstaller);
-
-    $this->pipeline->execute($packageCode, 'direct');
-
-    $license = License::byPackage($packageCode)->first();
-    expect($license->requires_marketplace_packages)->toBe($deps);
-});
-
-it('auto-installs a missing marketplace dependency before the main package', function (): void {
-    $packageCode = 'tipowerup/ti-theme-orange';
-    $depCode = 'tipowerup/ti-theme-toolkit';
-    $deps = [['name' => 'Toolkit', 'code' => $depCode, 'min_version' => '0.4.0']];
-
-    $this->apiClient->shouldReceive('verifyLicense')
-        ->with($depCode)
-        ->once()
-        ->andReturn(defaultLicenseData('0.4.2'));
-
-    $this->apiClient->shouldReceive('verifyLicense')
-        ->with($packageCode)
-        ->once()
-        ->andReturn(defaultLicenseData('1.0.0') + ['requires_marketplace_packages' => $deps]);
-
-    $this->compatibilityChecker->shouldReceive('check')->andReturn([]);
-    $this->compatibilityChecker->shouldReceive('isSatisfied')->andReturn(true);
-    $this->backupManager->shouldReceive('hasBackup')->andReturn(false);
-
-    $mockInstaller = Mockery::mock(DirectInstaller::class);
-    $mockInstaller->shouldReceive('install')->twice();
-    $mockInstaller->shouldReceive('runMigrations')->twice();
-    $this->app->instance(DirectInstaller::class, $mockInstaller);
-
-    $this->pipeline->execute($packageCode, 'direct');
-
-    expect(License::byPackage($depCode)->first())->not->toBeNull()
-        ->and(License::byPackage($packageCode)->first())->not->toBeNull();
-});
-
-it('skips dep install when the dep is already present at a sufficient version', function (): void {
-    $packageCode = 'tipowerup/ti-theme-orange';
-    $depCode = 'tipowerup/ti-theme-toolkit';
-    createInstalledLicense($depCode, '0.5.0');
-
-    $deps = [['name' => 'Toolkit', 'code' => $depCode, 'min_version' => '0.4.0']];
-    $licenseData = defaultLicenseData('1.0.0') + ['requires_marketplace_packages' => $deps];
-
-    $this->apiClient->shouldReceive('verifyLicense')->with($packageCode)->once()->andReturn($licenseData);
-    $this->apiClient->shouldReceive('verifyLicense')->with($depCode)->never();
-
-    $this->compatibilityChecker->shouldReceive('check')->andReturn([]);
-    $this->compatibilityChecker->shouldReceive('isSatisfied')->andReturn(true);
-    $this->backupManager->shouldReceive('hasBackup')->andReturn(false);
-
-    $mockInstaller = Mockery::mock(DirectInstaller::class);
-    $mockInstaller->shouldReceive('install')->once();
-    $mockInstaller->shouldReceive('runMigrations')->once();
-    $this->app->instance(DirectInstaller::class, $mockInstaller);
-
-    $this->pipeline->execute($packageCode, 'direct');
-});
-
-it('fails the main install when a dependency install fails', function (): void {
-    $packageCode = 'tipowerup/ti-theme-orange';
-    $depCode = 'tipowerup/ti-theme-toolkit';
-    $deps = [['name' => 'Toolkit', 'code' => $depCode, 'min_version' => '0.4.0']];
-
-    $this->apiClient->shouldReceive('verifyLicense')
-        ->with($depCode)
-        ->once()
-        ->andThrow(new LicenseValidationException('Toolkit license missing'));
-
-    $this->apiClient->shouldReceive('verifyLicense')
-        ->with($packageCode)
-        ->once()
-        ->andReturn(defaultLicenseData('1.0.0') + ['requires_marketplace_packages' => $deps]);
-
-    $this->backupManager->shouldReceive('hasBackup')->andReturn(false);
-
-    expect(fn () => $this->pipeline->execute($packageCode, 'direct'))
-        ->toThrow(PackageInstallationException::class, 'Failed to install required dependency');
-
-    expect(License::byPackage($packageCode)->first())->toBeNull();
-});
-
-it('refuses to uninstall a package that is still required by another installed package', function (): void {
-    $depCode = 'tipowerup/ti-theme-toolkit';
-    $consumerCode = 'tipowerup/ti-theme-orange';
-
-    createInstalledLicense($depCode, '0.4.0');
-    License::create([
-        'package_code' => $consumerCode,
-        'package_name' => 'Orange',
-        'package_type' => 'theme',
-        'version' => '1.0.0',
-        'install_method' => 'direct',
-        'requires_marketplace_packages' => [['code' => $depCode]],
-        'installed_at' => now(),
-        'updated_at' => now(),
-        'is_active' => true,
-    ]);
-
-    expect(fn () => $this->pipeline->executeUninstall($depCode, 'direct'))
-        ->toThrow(PackageInstallationException::class, $consumerCode);
-
-    expect(License::byPackage($depCode)->first()->is_active)->toBeTrue();
-});
-
-it('persists requires_marketplace_packages on update', function (): void {
-    $packageCode = 'tipowerup/ti-ext-test';
-    createInstalledLicense($packageCode, '1.0.0');
-
-    $deps = [['name' => 'Toolkit', 'code' => 'tipowerup/ti-theme-toolkit', 'min_version' => '0.4.0']];
-    createInstalledLicense('tipowerup/ti-theme-toolkit', '0.4.2');
-
-    $this->apiClient->shouldReceive('verifyLicense')
-        ->with($packageCode)
-        ->once()
-        ->andReturn(defaultLicenseData('2.0.0') + ['requires_marketplace_packages' => $deps]);
-
-    $this->compatibilityChecker->shouldReceive('assertSatisfied')->once()->andReturnNull();
-    $this->backupManager->shouldReceive('hasBackup')->andReturn(false);
-
-    $mockInstaller = Mockery::mock(DirectInstaller::class);
-    $mockInstaller->shouldReceive('update')->once();
-    $mockInstaller->shouldReceive('runMigrations')->once();
-    $this->app->instance(DirectInstaller::class, $mockInstaller);
-
-    $this->pipeline->executeUpdate($packageCode, 'direct');
-
-    $license = License::byPackage($packageCode)->first();
-    expect($license->requires_marketplace_packages)->toBe($deps);
-});
-
-it('allows uninstall when no other package depends on it', function (): void {
-    $packageCode = 'tipowerup/ti-theme-toolkit';
-    createInstalledLicense($packageCode);
-
-    $this->backupManager->shouldReceive('createBackup')->once();
-
-    $mockInstaller = Mockery::mock(DirectInstaller::class);
-    $mockInstaller->shouldReceive('uninstall')->once();
-    $this->app->instance(DirectInstaller::class, $mockInstaller);
-
-    $this->pipeline->executeUninstall($packageCode, 'direct');
-
-    expect(License::byPackage($packageCode)->first()->is_active)->toBeFalse();
 });

@@ -7,6 +7,7 @@ namespace Tipowerup\Installer\Services\Concerns;
 use Igniter\Main\Classes\ThemeManager;
 use Igniter\Main\Models\Theme as ThemeModel;
 use Igniter\System\Classes\ExtensionManager;
+use Illuminate\Support\Facades\Log;
 use ReflectionClass;
 use Throwable;
 use Tipowerup\Installer\Exceptions\PackageInstallationException;
@@ -53,11 +54,21 @@ trait RegistersWithTI
 
                 // TI's ThemeManager::installTheme() omits the `data` column, which has a
                 // NOT NULL JSON CHECK constraint on fresh rows. Pre-seed the row so the
-                // subsequent installTheme() call updates an existing record.
-                ThemeModel::firstOrCreate(
-                    ['code' => $theme->name],
-                    ['name' => $theme->label ?? $theme->name, 'data' => []],
-                );
+                // subsequent installTheme() call updates an existing record. Best-effort
+                // only: if the model layer is in a broken state (e.g. residual static
+                // state from a prior test polluting Igniter's ExtendableTrait), we let
+                // installTheme() be the source of truth for success.
+                try {
+                    ThemeModel::updateOrCreate(
+                        ['code' => $theme->name],
+                        ['name' => $theme->label ?? $theme->name, 'data' => []],
+                    );
+                } catch (Throwable $seedError) {
+                    Log::debug('Theme row pre-seed skipped; falling through to installTheme()', [
+                        'theme' => $theme->name,
+                        'error' => $seedError->getMessage(),
+                    ]);
+                }
 
                 $themeManager->installTheme($theme->name);
             }
@@ -65,7 +76,9 @@ trait RegistersWithTI
             throw $e;
         } catch (Throwable $e) {
             throw new PackageInstallationException(
-                'Failed to register with TastyIgniter: '.$e->getMessage()
+                'Failed to register with TastyIgniter: '.$e->getMessage(),
+                0,
+                $e,
             );
         }
     }

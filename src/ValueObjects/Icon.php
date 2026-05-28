@@ -9,6 +9,12 @@ namespace Tipowerup\Installer\ValueObjects;
  */
 final readonly class Icon
 {
+    /**
+     * Max bytes we'll inline as a base64 data URI. Anything larger is dropped
+     * to a class-only icon to avoid bloating every page render.
+     */
+    private const int MAX_INLINE_BYTES = 65536;
+
     public function __construct(
         public ?string $url = null,
         public ?string $class = null,
@@ -23,7 +29,7 @@ final readonly class Icon
     public static function fromAny(mixed $raw, ?string $basePath = null): self
     {
         if (is_string($raw) && $raw !== '') {
-            return new self(class: 'fa fa-'.ltrim($raw, 'fa-'));
+            return new self(class: 'fa fa-'.preg_replace('/^fa-/', '', $raw));
         }
 
         if (!is_array($raw)) {
@@ -37,7 +43,7 @@ final readonly class Icon
 
         if ($url === null && $basePath !== null && isset($raw['image']) && $raw['image'] !== '') {
             $imagePath = $basePath.'/'.$raw['image'];
-            if (file_exists($imagePath)) {
+            if (file_exists($imagePath) && filesize($imagePath) <= self::MAX_INLINE_BYTES) {
                 $mime = mime_content_type($imagePath) ?: 'image/svg+xml';
                 $url = 'data:'.$mime.';base64,'.base64_encode((string) file_get_contents($imagePath));
             }
