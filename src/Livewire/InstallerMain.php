@@ -6,6 +6,7 @@ namespace Tipowerup\Installer\Livewire;
 
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\On;
+use Livewire\Attributes\Session;
 use Livewire\Component;
 use Tipowerup\Installer\Services\CoreExtensionChecker;
 
@@ -13,6 +14,7 @@ class InstallerMain extends Component
 {
     public bool $isOnboarded = false;
 
+    #[Session(key: 'tipowerup_installer_active_tab')]
     public string $activeTab = 'installed';
 
     public bool $showSettings = false;

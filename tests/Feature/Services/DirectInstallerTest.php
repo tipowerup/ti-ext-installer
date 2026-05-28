@@ -84,12 +84,13 @@ function extensionZipFiles(): array
 }
 
 /**
- * Return a minimal valid ZIP for a theme (theme.json).
+ * Return a minimal valid ZIP for a theme (theme.json + composer.json).
  */
 function themeZipFiles(): array
 {
     return [
         'theme.json' => json_encode(['code' => 'tipowerup-darktheme', 'name' => 'Dark Theme']),
+        'composer.json' => json_encode(['name' => 'tipowerup/ti-theme-darktheme']),
     ];
 }
 
@@ -152,8 +153,13 @@ describe('install', function (): void {
             'packages.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
         ]);
 
-        $installer = directInstallerWithMockedTI(null, function ($mock): void {
-            $mock->shouldReceive('loadTheme')->zeroOrMoreTimes()->andReturn(null);
+        $themeStub = new \Igniter\Main\Classes\Theme(
+            sys_get_temp_dir(),
+            ['code' => 'tipowerup-darktheme', 'name' => 'Dark Theme'],
+        );
+
+        $installer = directInstallerWithMockedTI(null, function ($mock) use ($themeStub): void {
+            $mock->shouldReceive('loadTheme')->zeroOrMoreTimes()->andReturn($themeStub);
             $mock->shouldReceive('installTheme')->zeroOrMoreTimes()->andReturn(true);
         });
 

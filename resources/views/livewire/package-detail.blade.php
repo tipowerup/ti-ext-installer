@@ -15,7 +15,7 @@
             </div>
         </div>
         <div class="d-flex justify-content-end gap-2 mt-3">
-            <button wire:click="closeDetail" type="button" class="btn btn-secondary">
+            <button @click="$dispatch('close-package-detail')" wire:click="closeDetail" type="button" class="btn btn-secondary">
                 {{ lang('tipowerup.installer::default.progress_close') }}
             </button>
             <button wire:click="loadPackageDetails" type="button" class="btn btn-primary">
@@ -49,9 +49,16 @@
             <div class="flex-grow-1">
                 <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
                     <h4 class="mb-0">{{ $packageData['name'] }}</h4>
-                    @if(!($packageData['local'] ?? false))
+                    @if($packageData['installed'] ?? false)
+                        <span class="badge bg-success-subtle text-success border border-success-subtle d-inline-flex align-items-center gap-1">
+                            <i class="fa fa-check"></i>
+                            {{ lang('tipowerup.installer::default.installed_active') }}
+                        </span>
+                    @elseif(!($packageData['local'] ?? false))
                         @if($packageData['purchased'] ?? false)
-                            <button wire:click="installPackage" type="button" class="btn btn-success btn-sm"
+                            <button wire:click="installPackage"
+                                    @click="$dispatch('begin-install-instant', { packageName: @js($packageData['name']) })"
+                                    type="button" class="btn btn-success btn-sm"
                                     wire:loading.attr="disabled">
                                 <span wire:loading.remove wire:target="installPackage">
                                     <i class="fa fa-download me-1"></i>

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tipowerup\Installer\Services\Concerns;
 
 use Igniter\Main\Classes\ThemeManager;
+use Igniter\Main\Models\Theme as ThemeModel;
 use Igniter\System\Classes\ExtensionManager;
 use ReflectionClass;
 use Throwable;
@@ -43,8 +44,22 @@ trait RegistersWithTI
                 $extensionManager->installExtension($extensionCode);
             } else {
                 $themeManager = resolve(ThemeManager::class);
-                $themeManager->loadTheme($path);
-                $themeManager->installTheme($packageCode);
+                $theme = $themeManager->loadTheme($path);
+                if ($theme === null) {
+                    throw new PackageInstallationException(
+                        'Failed to load theme after install: '.$path
+                    );
+                }
+
+                // TI's ThemeManager::installTheme() omits the `data` column, which has a
+                // NOT NULL JSON CHECK constraint on fresh rows. Pre-seed the row so the
+                // subsequent installTheme() call updates an existing record.
+                ThemeModel::firstOrCreate(
+                    ['code' => $theme->name],
+                    ['name' => $theme->label ?? $theme->name, 'data' => []],
+                );
+
+                $themeManager->installTheme($theme->name);
             }
         } catch (PackageInstallationException $e) {
             throw $e;

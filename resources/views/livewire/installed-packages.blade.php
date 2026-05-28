@@ -110,7 +110,7 @@
                             @php $icon = $package['icon'] ?? null; @endphp
                             <div wire:key="update-{{ $package['code'] }}" class="d-flex align-items-center justify-content-between p-2 border rounded mb-2">
                                 <div class="d-flex align-items-center gap-3">
-                                    @include('tipowerup.installer::livewire._partials.package-icon-small', ['icon' => $icon, 'name' => $package['name'], 'type' => $package['type']])
+                                    @include('tipowerup.installer::livewire._partials.package-icon', ['icon' => $icon, 'name' => $package['name'], 'type' => $package['type'], 'variant' => 'list'])
                                     <div>
                                         <strong class="tipowerup-installer__text-sm">{{ $package['name'] }}</strong>
                                         <div class="text-muted tipowerup-installer__text-xs">
@@ -119,6 +119,7 @@
                                     </div>
                                 </div>
                                 <button wire:click="updatePackage('{{ $package['code'] }}')"
+                                                        @click="$dispatch('begin-install-instant', { packageName: @js($package['name']) })"
                                         wire:loading.attr="disabled"
                                         wire:target="updatePackage('{{ $package['code'] }}')"
                                         class="btn btn-success btn-sm">
@@ -159,7 +160,7 @@
                                 <div wire:key="installed-{{ $package['code'] }}" class="card tipowerup-installer__package-card">
                                     <div class="card-body">
                                         <div class="tipowerup-installer__package-header">
-                                            @include('tipowerup.installer::livewire._partials.package-icon', ['icon' => $icon, 'name' => $package['name'], 'type' => $package['type'], 'size' => '44px'])
+                                            @include('tipowerup.installer::livewire._partials.package-icon', ['icon' => $icon, 'name' => $package['name'], 'type' => $package['type']])
 
                                             <div class="tipowerup-installer__package-info">
                                                 <h6 class="tipowerup-installer__package-name mb-0">
@@ -219,6 +220,7 @@
                                                 <div class="d-flex gap-2">
                                                     @if($package['has_update'])
                                                         <button wire:click="updatePackage('{{ $package['code'] }}')"
+                                                        @click="$dispatch('begin-install-instant', { packageName: @js($package['name']) })"
                                                                 wire:loading.attr="disabled"
                                                                 wire:target="updatePackage('{{ $package['code'] }}')"
                                                                 class="btn btn-success btn-sm">
@@ -340,7 +342,7 @@
                                         @php $icon = $package['icon'] ?? null; @endphp
                                         <tr wire:key="installed-list-{{ $package['code'] }}">
                                             <td>
-                                                @include('tipowerup.installer::livewire._partials.package-icon-small', ['icon' => $icon, 'name' => $package['name'], 'type' => $package['type']])
+                                                @include('tipowerup.installer::livewire._partials.package-icon', ['icon' => $icon, 'name' => $package['name'], 'type' => $package['type'], 'variant' => 'list'])
                                             </td>
                                             <td>
                                                 <div>
@@ -385,6 +387,7 @@
                                                 <div class="btn-group btn-group-sm" role="group">
                                                     @if($package['has_update'])
                                                         <button wire:click="updatePackage('{{ $package['code'] }}')"
+                                                        @click="$dispatch('begin-install-instant', { packageName: @js($package['name']) })"
                                                                 wire:loading.attr="disabled"
                                                                 wire:target="updatePackage('{{ $package['code'] }}')"
                                                                 class="btn btn-success">
@@ -496,7 +499,7 @@
                                 <div wire:key="available-{{ $package['code'] }}" class="card tipowerup-installer__package-card">
                                     <div class="card-body">
                                         <div class="tipowerup-installer__package-header">
-                                            @include('tipowerup.installer::livewire._partials.package-icon', ['icon' => $icon, 'name' => $package['name'], 'type' => $package['type'], 'size' => '44px'])
+                                            @include('tipowerup.installer::livewire._partials.package-icon', ['icon' => $icon, 'name' => $package['name'], 'type' => $package['type']])
 
                                             <div class="tipowerup-installer__package-info">
                                                 <h6 class="tipowerup-installer__package-name mb-0">
@@ -522,6 +525,7 @@
                                         <div class="tipowerup-installer__package-footer">
                                             <div class="d-flex gap-2 flex-wrap align-items-center">
                                                 <button wire:click="installPackage('{{ $package['code'] }}')"
+                                                        @click="$dispatch('begin-install-instant', { packageName: @js($package['name']) })"
                                                         wire:loading.attr="disabled"
                                                         wire:target="installPackage('{{ $package['code'] }}')"
                                                         class="tipowerup-installer__btn-install btn btn-sm">
@@ -561,7 +565,7 @@
                                         @php $icon = $package['icon'] ?? null; @endphp
                                         <tr wire:key="available-list-{{ $package['code'] }}">
                                             <td>
-                                                @include('tipowerup.installer::livewire._partials.package-icon-small', ['icon' => $icon, 'name' => $package['name'], 'type' => $package['type']])
+                                                @include('tipowerup.installer::livewire._partials.package-icon', ['icon' => $icon, 'name' => $package['name'], 'type' => $package['type'], 'variant' => 'list'])
                                             </td>
                                             <td>
                                                 <div>
@@ -581,6 +585,7 @@
                                             <td class="text-end">
                                                 <div class="btn-group btn-group-sm" role="group">
                                                     <button wire:click="installPackage('{{ $package['code'] }}')"
+                                                        @click="$dispatch('begin-install-instant', { packageName: @js($package['name']) })"
                                                             wire:loading.attr="disabled"
                                                             wire:target="installPackage('{{ $package['code'] }}')"
                                                             class="btn btn-success">

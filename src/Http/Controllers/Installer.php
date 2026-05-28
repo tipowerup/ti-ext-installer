@@ -43,5 +43,6 @@ class Installer extends AdminController
         Template::setHeading($pageTitle);
 
         $this->addCss('tipowerup.installer::css/installer.css', 'tipowerup-installer-css');
+        $this->addJs('tipowerup.installer::js/lightbox.js', 'tipowerup-installer-lightbox-js');
     }
 }

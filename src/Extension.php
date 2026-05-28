@@ -13,6 +13,7 @@ use Igniter\System\Classes\ExtensionManager;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Override;
@@ -24,6 +25,7 @@ use Tipowerup\Installer\Livewire\InstallProgress;
 use Tipowerup\Installer\Livewire\Marketplace;
 use Tipowerup\Installer\Livewire\Onboarding;
 use Tipowerup\Installer\Livewire\PackageDetail;
+use Tipowerup\Installer\Console\RepublishAssetsCommand;
 use Tipowerup\Installer\Livewire\SettingsPanel;
 use Tipowerup\Installer\Services\BackgroundUpdateChecker;
 
@@ -57,6 +59,10 @@ class Extension extends BaseExtension
     {
         $this->mergeConfigFrom(dirname(__DIR__).'/config/installer.php', 'tipowerup.installer');
 
+        if (app()->runningInConsole()) {
+            $this->commands([RepublishAssetsCommand::class]);
+        }
+
         parent::register();
     }
 
@@ -70,6 +76,29 @@ class Extension extends BaseExtension
         $this->registerStoragePackages();
         $this->registerAutoUpdateCheck();
         $this->defineRoutes();
+        $this->selfInstallIfNeeded();
+    }
+
+    /**
+     * Auto-install on first admin request when composer require was used without `igniter:extension-install`.
+     */
+    protected function selfInstallIfNeeded(): void
+    {
+        if (app()->runningInConsole() || !Igniter::runningInAdmin()) {
+            return;
+        }
+
+        try {
+            if (Schema::hasTable('tip_licenses')) {
+                return;
+            }
+
+            resolve(ExtensionManager::class)->installExtension('tipowerup.installer');
+        } catch (Throwable $e) {
+            Log::warning('TI PowerUp Installer self-install failed', [
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -167,34 +196,148 @@ class Extension extends BaseExtension
         $extensionsPath = Storage::disk('local')->path('tipowerup/extensions');
         $themesPath = Storage::disk('local')->path('tipowerup/themes');
 
-        // Register storage-based extensions
         if (File::isDirectory($extensionsPath)) {
             $extensionManager = resolve(ExtensionManager::class);
             $extensionManager->addDirectory($extensionsPath);
 
-            // Must manually load each extension since ExtensionManager already
-            // ran loadExtensions() during __construct() before our boot()
             foreach (File::glob($extensionsPath.'/*/*/{extension,composer}.json', GLOB_BRACE) as $configFile) {
-                try {
-                    $extension = $extensionManager->loadExtension(dirname($configFile));
+                $packagePath = dirname($configFile);
 
-                    // Register the extension as a service provider so its
-                    // bootingExtension() runs — this registers lang, views,
-                    // resources, and route paths with the application.
+                try {
+                    $this->bootStoragePackage($packagePath);
+                    $extension = $extensionManager->loadExtension($packagePath);
                     app()->register($extension);
                 } catch (Throwable $e) {
                     Log::warning('Failed to load storage extension', [
-                        'path' => dirname($configFile),
+                        'path' => $packagePath,
                         'error' => $e->getMessage(),
                     ]);
                 }
             }
         }
 
-        // Register storage-based themes (lazy loading handles discovery)
         if (File::isDirectory($themesPath)) {
             $themeManager = resolve(ThemeManager::class);
             $themeManager->addDirectory($themesPath);
+
+            foreach (File::directories($themesPath) as $themePath) {
+                try {
+                    $this->bootStoragePackage($themePath);
+                    $themeManager->loadTheme($themePath);
+                } catch (Throwable $e) {
+                    Log::warning('Failed to load storage theme', [
+                        'path' => $themePath,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
         }
+    }
+
+    /**
+     * Bring a storage-installed package's bundled Composer environment online.
+     *
+     * Storage-installed packages are invisible to Laravel's PackageManifest
+     * (which only reads the host's vendor/composer/installed.json). This method
+     * runs the same algorithm Laravel runs at boot — autoload + provider
+     * discovery from extra.laravel.providers — against the nested manifest
+     * inside the storage package's own vendor/.
+     *
+     * Idempotent and host-safe: every provider is deduped against
+     * app()->getLoadedProviders() so host-provided packages (Livewire, etc.)
+     * are never double-registered.
+     */
+    protected function bootStoragePackage(string $packagePath): void
+    {
+        $autoloadFile = $packagePath.'/vendor/autoload.php';
+
+        if (File::isFile($autoloadFile)) {
+            try {
+                require_once $autoloadFile;
+            } catch (Throwable $e) {
+                Log::warning('Failed to load bundled vendor autoload', [
+                    'path' => $autoloadFile,
+                    'error' => $e->getMessage(),
+                ]);
+
+                return;
+            }
+        }
+
+        $loaded = app()->getLoadedProviders();
+
+        foreach ($this->discoverStorageProviders($packagePath) as $provider) {
+            if (isset($loaded[$provider]) || !class_exists($provider)) {
+                continue;
+            }
+
+            try {
+                app()->register($provider);
+            } catch (Throwable $e) {
+                Log::warning('Failed to register storage package provider', [
+                    'provider' => $provider,
+                    'path' => $packagePath,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Collect service-provider FQCNs declared by a storage package and the
+     * Composer deps bundled inside its vendor/.
+     *
+     * Reads the nested vendor/composer/installed.json when present (the
+     * authoritative list Composer wrote at publish time); falls back to the
+     * package's own composer.json when the dist ships without that file.
+     *
+     * @return list<string>
+     */
+    protected function discoverStorageProviders(string $packagePath): array
+    {
+        $providers = [];
+
+        $installedJson = $packagePath.'/vendor/composer/installed.json';
+
+        if (File::isFile($installedJson)) {
+            try {
+                $manifest = json_decode((string) File::get($installedJson), true, flags: JSON_THROW_ON_ERROR);
+                $packages = $manifest['packages'] ?? $manifest ?? [];
+
+                foreach ($packages as $package) {
+                    foreach ((array) ($package['extra']['laravel']['providers'] ?? []) as $provider) {
+                        if (is_string($provider)) {
+                            $providers[] = $provider;
+                        }
+                    }
+                }
+            } catch (Throwable $e) {
+                Log::warning('Failed to parse bundled installed.json', [
+                    'path' => $installedJson,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $manifestFile = $packagePath.'/composer.json';
+
+        if (File::isFile($manifestFile)) {
+            try {
+                $manifest = json_decode((string) File::get($manifestFile), true, flags: JSON_THROW_ON_ERROR);
+
+                foreach ((array) ($manifest['extra']['laravel']['providers'] ?? []) as $provider) {
+                    if (is_string($provider)) {
+                        $providers[] = $provider;
+                    }
+                }
+            } catch (Throwable $e) {
+                Log::warning('Failed to parse storage package composer.json', [
+                    'path' => $manifestFile,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return array_values(array_unique($providers));
     }
 }

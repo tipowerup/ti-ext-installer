@@ -119,7 +119,7 @@
                                 <input wire:model.defer="apiKey" type="text" class="form-control form-control-lg"
                                        id="apiKey" placeholder="PUK-XXXX-XXXX-XXXX-XXXX" @if($isVerifying) disabled @endif>
                                 <div class="form-text">
-                                    {{ lang('tipowerup.installer::default.onboarding_api_key_help') }}
+                                    {!! lang('tipowerup.installer::default.onboarding_api_key_help') !!}
                                 </div>
                             </div>
 

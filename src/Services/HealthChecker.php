@@ -179,15 +179,11 @@ class HealthChecker
         return [
             [
                 'label' => lang('tipowerup.installer::default.link_support'),
-                'url' => 'https://tipowerup.com/support?ref=tipowerup-installer',
+                'url' => 'https://tipowerup.com/support?utm_source=tipowerup-installer',
             ],
             [
                 'label' => lang('tipowerup.installer::default.link_discord'),
-                'url' => 'https://tipowerup.com/social/discord?ref=tipowerup-installer',
-            ],
-            [
-                'label' => lang('tipowerup.installer::default.link_reddit'),
-                'url' => 'https://tipowerup.com/social/reddit?ref=tipowerup-installer',
+                'url' => 'https://tipowerup.com/social/discord?utm_source=tipowerup-installer',
             ],
         ];
     }

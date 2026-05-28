@@ -9,6 +9,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Str;
 use Livewire\Component;
 use Throwable;
+use Tipowerup\Installer\Models\License;
 use Tipowerup\Installer\Services\PowerUpApiClient;
 
 class PackageDetail extends Component
@@ -82,6 +83,7 @@ class PackageDetail extends Component
             'price_formatted' => $data['price_formatted'] ?? null,
             'purchased' => $data['purchased'] ?? false,
             'local' => $data['local'] ?? false,
+            'installed' => License::byPackage($data['code'] ?? $this->packageCode)->exists(),
         ];
     }
 
@@ -90,13 +92,28 @@ class PackageDetail extends Component
      */
     private function sanitizeHtml(string $html): string
     {
-        return strip_tags($html, [
+        $cleaned = strip_tags($html, [
             'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
             'ul', 'ol', 'li', 'a', 'strong', 'em', 'b', 'i',
             'code', 'pre', 'blockquote', 'br', 'hr',
             'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td',
             'dl', 'dt', 'dd', 'sub', 'sup',
         ]);
+
+        return $this->hideBrokenImages($cleaned);
+    }
+
+    /**
+     * Attach an onerror handler that hides images failing to load (e.g.
+     * README screenshots with relative paths, dead links, private repos).
+     */
+    private function hideBrokenImages(string $html): string
+    {
+        return (string) preg_replace(
+            '/<img\b(?![^>]*\bonerror=)([^>]*)>/i',
+            '<img$1 onerror="this.style.display=\'none\'">',
+            $html,
+        );
     }
 
     public function switchDetailTab(string $tab): void
@@ -115,8 +132,8 @@ class PackageDetail extends Component
     {
         $packageName = $this->packageData['name'] ?? $this->packageCode;
 
-        $this->dispatch('begin-install', packageCode: $this->packageCode, packageName: $packageName);
-        $this->dispatch('package-detail-closed');
+        $this->dispatch('begin-install', packageCode: $this->packageCode, packageName: $packageName)->to(InstallerMain::class);
+        $this->dispatch('package-detail-closed')->to(InstallerMain::class);
     }
 
     public function render(): View

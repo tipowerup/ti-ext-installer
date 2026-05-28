@@ -61,7 +61,10 @@ function directInstaller(): DirectInstaller
                 return $hasExtensionFile && file_exists($path.'/composer.json');
             }
 
-            return file_exists($path.'/theme.json');
+            $hasManifest = file_exists($path.'/theme.php')
+                || file_exists($path.'/theme.json');
+
+            return $hasManifest && file_exists($path.'/composer.json');
         }
     };
 }
@@ -440,16 +443,32 @@ describe('validatePackageStructure', function () use (&$registry): void {
         expect(directInstaller()->callValidatePackageStructure($dir, 'extension'))->toBeFalse();
     });
 
-    it('accepts a theme with theme.json at root', function () use (&$registry): void {
+    it('accepts a theme with theme.json + composer.json at root', function () use (&$registry): void {
         $dir = makeTempDir($registry);
         file_put_contents($dir.'/theme.json', '{}');
+        file_put_contents($dir.'/composer.json', '{}');
 
         expect(directInstaller()->callValidatePackageStructure($dir, 'theme'))->toBeTrue();
     });
 
-    it('rejects a theme missing theme.json', function () use (&$registry): void {
+    it('accepts a theme with theme.php + composer.json at root', function () use (&$registry): void {
+        $dir = makeTempDir($registry);
+        file_put_contents($dir.'/theme.php', '<?php return [];');
+        file_put_contents($dir.'/composer.json', '{}');
+
+        expect(directInstaller()->callValidatePackageStructure($dir, 'theme'))->toBeTrue();
+    });
+
+    it('rejects a theme missing the manifest', function () use (&$registry): void {
         $dir = makeTempDir($registry);
         file_put_contents($dir.'/composer.json', '{}');
+
+        expect(directInstaller()->callValidatePackageStructure($dir, 'theme'))->toBeFalse();
+    });
+
+    it('rejects a theme missing composer.json', function () use (&$registry): void {
+        $dir = makeTempDir($registry);
+        file_put_contents($dir.'/theme.json', '{}');
 
         expect(directInstaller()->callValidatePackageStructure($dir, 'theme'))->toBeFalse();
     });

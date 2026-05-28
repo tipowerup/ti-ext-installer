@@ -87,13 +87,11 @@
 
     <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
         @if($isCompleted)
-            <button wire:click="closeProgress" wire:loading.attr="disabled" type="button" class="btn btn-primary">
-                <span wire:loading wire:target="closeProgress"><i class="fa fa-spinner fa-spin me-1"></i></span>
+            <button @click="$dispatch('close-install-progress')" wire:click="closeProgress" type="button" class="btn btn-primary">
                 {{ lang('tipowerup.installer::default.progress_close') }}
             </button>
         @elseif($hasFailed)
-            <button wire:click="closeProgress" wire:loading.attr="disabled" type="button" class="btn btn-secondary">
-                <span wire:loading wire:target="closeProgress"><i class="fa fa-spinner fa-spin me-1"></i></span>
+            <button @click="$dispatch('close-install-progress')" wire:click="closeProgress" type="button" class="btn btn-secondary">
                 {{ lang('tipowerup.installer::default.progress_close') }}
             </button>
             @if(!$isCancelled)

@@ -37,7 +37,7 @@ function installedPackage(string $code = 'tipowerup/ti-ext-test', string $name =
         'is_owned' => true,
         'expires_at' => null,
         'has_update' => false,
-        'icon' => 'fa-puzzle-piece',
+        'icon' => ['url' => null, 'class' => 'fa fa-puzzle-piece', 'background_color' => null, 'color' => null],
         'settings_url' => null,
         'edit_url' => null,
         'customize_url' => null,
@@ -525,7 +525,7 @@ it('activateTheme sets package is_active to true on success', function (): void 
         installedPackage('tipowerup/ti-thm-orange', 'Orange Theme', [
             'theme_code' => 'tipowerup-orange-tw',
             'type' => 'theme',
-            'icon' => 'fa-paint-brush',
+            'icon' => ['url' => null, 'class' => 'fa fa-paint-brush', 'background_color' => null, 'color' => null],
             'is_active' => false,
         ]),
     ]);
@@ -546,7 +546,7 @@ it('activateTheme sets errorMessage when Theme::activateTheme throws', function 
         installedPackage('tipowerup/ti-thm-nonexistent', 'Ghost Theme', [
             'theme_code' => 'tipowerup-nonexistent',
             'type' => 'theme',
-            'icon' => 'fa-paint-brush',
+            'icon' => ['url' => null, 'class' => 'fa fa-paint-brush', 'background_color' => null, 'color' => null],
             'is_active' => false,
         ]),
     ]);

@@ -8,7 +8,7 @@ use Tipowerup\Installer\Exceptions\LicenseValidationException;
 use Tipowerup\Installer\Services\PowerUpApiClient;
 
 beforeEach(function (): void {
-    config()->set('tipowerup.installer.api_url', 'https://api.tipowerup.com');
+    config()->set('tipowerup.installer.api_url', 'https://api.tipowerup.com/api/v1');
 
     $this->client = new class extends PowerUpApiClient
     {
