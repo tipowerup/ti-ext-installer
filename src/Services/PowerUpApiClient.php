@@ -49,7 +49,7 @@ class PowerUpApiClient
 
     public function verifyKey(): array
     {
-        $data = $this->makeRequest('POST', '/api/v1/powerup/validate', [
+        $data = $this->makeRequest('POST', '/powerup/validate', [
             'domain' => request()->getHost(),
         ]);
 
@@ -64,7 +64,7 @@ class PowerUpApiClient
 
     public function verifyLicense(string $packageCode): array
     {
-        $data = $this->makeRequest('POST', '/api/v1/powerup/verify-key', [
+        $data = $this->makeRequest('POST', '/powerup/verify-key', [
             'package_code' => $packageCode,
             'domain' => request()->getHost(),
             'ti_version' => app()->version(),
@@ -81,7 +81,7 @@ class PowerUpApiClient
 
     public function checkUpdates(array $installedPackages): array
     {
-        $response = $this->makeRequest('POST', '/api/v1/powerup/check-updates', [
+        $response = $this->makeRequest('POST', '/powerup/check-updates', [
             'packages' => $installedPackages,
         ]);
 
@@ -90,7 +90,7 @@ class PowerUpApiClient
 
     public function getMyPackages(): array
     {
-        return $this->makeRequest('GET', '/api/v1/powerup/products');
+        return $this->makeRequest('GET', '/powerup/products');
     }
 
     public function getMarketplace(array $filters = []): array
@@ -102,24 +102,24 @@ class PowerUpApiClient
             'per_page' => $filters['per_page'] ?? null,
         ]);
 
-        return $this->makeRequest('GET', '/api/v1/powerup/marketplace', $queryParams);
+        return $this->makeRequest('GET', '/powerup/marketplace', $queryParams);
     }
 
     public function getPackageDetail(string $packageCode): array
     {
-        $response = $this->makeRequest('GET', '/api/v1/powerup/products/'.$packageCode);
+        $response = $this->makeRequest('GET', '/powerup/products/'.$packageCode);
 
         return $response['data'] ?? [];
     }
 
     public function getProductVersion(string $slug): array
     {
-        return $this->makeRequest('GET', '/api/v1/powerup/product/'.$slug.'/version');
+        return $this->makeRequest('GET', '/powerup/product/'.$slug.'/version');
     }
 
     public function downloadProduct(string $slug): array
     {
-        return $this->makeRequest('GET', '/api/v1/powerup/product/'.$slug.'/download');
+        return $this->makeRequest('GET', '/powerup/product/'.$slug.'/download');
     }
 
     /**
@@ -130,7 +130,7 @@ class PowerUpApiClient
      */
     public function submitReport(array $reportData): array
     {
-        $data = $this->makeRequest('POST', '/api/v1/powerup/report-issue', $reportData);
+        $data = $this->makeRequest('POST', '/powerup/report-issue', $reportData);
 
         if (!($data['success'] ?? false)) {
             throw new RuntimeException($data['message'] ?? 'Failed to submit report.');
@@ -141,7 +141,7 @@ class PowerUpApiClient
 
     public function acquireFreeProduct(string $packageCode): array
     {
-        $data = $this->makeRequest('POST', '/api/v1/powerup/acquire-free', [
+        $data = $this->makeRequest('POST', '/powerup/acquire-free', [
             'package_code' => $packageCode,
         ]);
 

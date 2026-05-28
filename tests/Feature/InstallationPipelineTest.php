@@ -90,7 +90,7 @@ it('successful install creates a license record and logs success', function (): 
         ->andReturn(defaultLicenseData('2.0.0'));
 
     $this->compatibilityChecker->shouldReceive('check')->andReturn([]);
-    $this->compatibilityChecker->shouldReceive('isSatisfied')->andReturn(true);
+    $this->compatibilityChecker->shouldReceive('getFailures')->andReturn([]);
 
     // Package does not exist on disk → backup stage is skipped.
     $this->backupManager->shouldReceive('hasBackup')->andReturn(false);
@@ -164,7 +164,7 @@ it('skips backup creation when package does not exist on disk', function (): voi
 
     $this->apiClient->shouldReceive('verifyLicense')->andReturn(defaultLicenseData());
     $this->compatibilityChecker->shouldReceive('check')->andReturn([]);
-    $this->compatibilityChecker->shouldReceive('isSatisfied')->andReturn(true);
+    $this->compatibilityChecker->shouldReceive('getFailures')->andReturn([]);
 
     // BackupManager::createBackup must NOT be called.
     $this->backupManager->shouldReceive('createBackup')->never();
@@ -185,7 +185,7 @@ it('resolves DirectInstaller when method is direct', function (): void {
 
     $this->apiClient->shouldReceive('verifyLicense')->andReturn(defaultLicenseData());
     $this->compatibilityChecker->shouldReceive('check')->andReturn([]);
-    $this->compatibilityChecker->shouldReceive('isSatisfied')->andReturn(true);
+    $this->compatibilityChecker->shouldReceive('getFailures')->andReturn([]);
     $this->backupManager->shouldReceive('hasBackup')->andReturn(false);
 
     $mockDirect = Mockery::mock(DirectInstaller::class);
@@ -208,7 +208,7 @@ it('resolves ComposerInstaller when method is composer', function (): void {
 
     $this->apiClient->shouldReceive('verifyLicense')->andReturn(defaultLicenseData());
     $this->compatibilityChecker->shouldReceive('check')->andReturn([]);
-    $this->compatibilityChecker->shouldReceive('isSatisfied')->andReturn(true);
+    $this->compatibilityChecker->shouldReceive('getFailures')->andReturn([]);
     $this->backupManager->shouldReceive('hasBackup')->andReturn(false);
 
     $mockComposer = Mockery::mock(ComposerInstaller::class);
@@ -231,7 +231,7 @@ it('restores backup on failure when a backup exists', function (): void {
 
     $this->apiClient->shouldReceive('verifyLicense')->andReturn(defaultLicenseData());
     $this->compatibilityChecker->shouldReceive('check')->andReturn([]);
-    $this->compatibilityChecker->shouldReceive('isSatisfied')->andReturn(true);
+    $this->compatibilityChecker->shouldReceive('getFailures')->andReturn([]);
 
     // Backup exists so restore should be called.
     $this->backupManager->shouldReceive('hasBackup')->andReturn(true);
@@ -253,7 +253,7 @@ it('does not restore backup on cancellation', function (): void {
 
     $this->apiClient->shouldReceive('verifyLicense')->andReturn(defaultLicenseData());
     $this->compatibilityChecker->shouldReceive('check')->andReturn([]);
-    $this->compatibilityChecker->shouldReceive('isSatisfied')->andReturn(true);
+    $this->compatibilityChecker->shouldReceive('getFailures')->andReturn([]);
 
     // Build a fresh ProgressTracker mock that signals cancellation on the
     // first isCancelled check (after the compatibility stage). This avoids
@@ -282,7 +282,7 @@ it('logs failure on installation error', function (): void {
 
     $this->apiClient->shouldReceive('verifyLicense')->andReturn(defaultLicenseData());
     $this->compatibilityChecker->shouldReceive('check')->andReturn([]);
-    $this->compatibilityChecker->shouldReceive('isSatisfied')->andReturn(true);
+    $this->compatibilityChecker->shouldReceive('getFailures')->andReturn([]);
     $this->backupManager->shouldReceive('hasBackup')->andReturn(false);
 
     $mockInstaller = Mockery::mock(DirectInstaller::class);
@@ -417,7 +417,7 @@ it('classifies a cancellation message as cancelled and skips backup restore', fu
 
     $this->apiClient->shouldReceive('verifyLicense')->andReturn(defaultLicenseData());
     $this->compatibilityChecker->shouldReceive('check')->andReturn([]);
-    $this->compatibilityChecker->shouldReceive('isSatisfied')->andReturn(true);
+    $this->compatibilityChecker->shouldReceive('getFailures')->andReturn([]);
 
     // Build a fresh ProgressTracker mock that always reports cancellation.
     // Using a dedicated mock instance avoids conflicts with the beforeEach setup.

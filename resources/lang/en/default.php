@@ -17,7 +17,7 @@ return [
     'onboarding_step_welcome' => 'Welcome',
     'onboarding_health_description' => 'Let\'s make sure your system meets all requirements.',
     'onboarding_api_key_description' => 'Enter your PowerUp key to get started.',
-    'onboarding_api_key_help' => 'Get your key at tipowerup.com/profile → PowerUp Key',
+    'onboarding_api_key_help' => 'Get your key at <a href="https://tipowerup.com/profile?utm_source=tipowerup-installer" target="_blank" rel="noopener">tipowerup.com/profile</a> → PowerUp Key',
     'onboarding_welcome_message' => 'Welcome, :name! You\'re all set.',
     'onboarding_get_started' => 'Get Started',
 
@@ -222,7 +222,6 @@ return [
     // Community links
     'link_support' => 'Contact Support',
     'link_discord' => 'Discord Community',
-    'link_reddit' => 'Reddit Community',
 
     // Background update notifications
     'notify_update_found_title' => 'TI PowerUp Updates',

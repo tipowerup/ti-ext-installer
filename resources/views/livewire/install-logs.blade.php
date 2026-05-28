@@ -5,7 +5,7 @@
             <i class="fa fa-history me-1"></i>
             {{ lang('tipowerup.installer::default.logs_title') }}
         </h6>
-        <button wire:click="closeModal" type="button" class="btn-close"></button>
+        <button @click="$dispatch('close-install-logs')" wire:click="closeModal" type="button" class="btn-close"></button>
     </div>
 
     {{-- Filters --}}

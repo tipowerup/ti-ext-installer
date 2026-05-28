@@ -165,32 +165,12 @@
                 <div wire:key="package-{{ $package['code'] }}" class="{{ $cardClasses }}">
                     <div class="card-body">
                         <div class="tipowerup-installer__package-header mb-2">
-                            @php
-                                $defaultColors = ['extension' => '#3B82F6', 'theme' => '#F97316', 'bundle' => '#8B5CF6'];
-                                $defaultColor = $defaultColors[$package['type'] ?? 'extension'] ?? '#3B82F6';
-                            @endphp
-                            @if($isBundle)
-                                <div class="tipowerup-installer__package-icon tipowerup-installer__package-icon--bundle">
-                                    <i class="fa fa-box"></i>
-                                </div>
-                            @elseif(is_array($icon) && !empty($icon['url']))
-                                <img
-                                    src="{{ $icon['url'] }}"
-                                    alt="{{ $package['name'] }}"
-                                    class="tipowerup-installer__package-icon tipowerup-installer__package-icon--img"
-                                />
-                            @elseif(is_array($icon) && !empty($icon['class']))
-                                <div
-                                    class="tipowerup-installer__package-icon"
-                                    style="background: {{ $icon['background_color'] ?? $defaultColor }}; color: {{ $icon['color'] ?? '#fff' }};"
-                                >
-                                    <i class="{{ $icon['class'] }}"></i>
-                                </div>
-                            @else
-                                <div class="tipowerup-installer__package-icon" style="background: {{ $defaultColor }};">
-                                    {{ strtoupper(substr($package['name'], 0, 2)) }}
-                                </div>
-                            @endif
+                            @include('tipowerup.installer::livewire._partials.package-icon', [
+                                'icon' => $icon,
+                                'name' => $package['name'],
+                                'type' => $isBundle ? 'bundle' : $package['type'],
+                                'size' => '44px',
+                            ])
 
                             <div class="tipowerup-installer__package-info flex-grow-1">
                                 <div class="tipowerup-installer__package-name" title="{{ $package['name'] }}">
@@ -303,29 +283,12 @@
                         @endphp
                         <tr wire:key="pkg-list-{{ $package['code'] }}">
                             <td>
-                                @php
-                                    $defaultColors = ['extension' => '#3B82F6', 'theme' => '#F97316', 'bundle' => '#8B5CF6'];
-                                    $defaultColor = $defaultColors[$package['type'] ?? 'extension'] ?? '#3B82F6';
-                                @endphp
-                                @if($isBundle)
-                                    <div class="tipowerup-installer__list-icon tipowerup-installer__list-icon--bundle">
-                                        <i class="fa fa-box"></i>
-                                    </div>
-                                @elseif(is_array($icon) && !empty($icon['url']))
-                                    <img
-                                        src="{{ $icon['url'] }}"
-                                        alt="{{ $package['name'] }}"
-                                        class="tipowerup-installer__list-icon tipowerup-installer__list-icon--img"
-                                    />
-                                @elseif(is_array($icon) && !empty($icon['class']))
-                                    <div class="tipowerup-installer__list-icon tipowerup-installer__list-icon--custom" style="background: {{ $icon['background_color'] ?? $defaultColor }}; color: {{ $icon['color'] ?? '#fff' }};">
-                                        <i class="{{ $icon['class'] }}"></i>
-                                    </div>
-                                @else
-                                    <div class="tipowerup-installer__list-icon tipowerup-installer__list-icon--text" style="background: {{ $defaultColor }};">
-                                        {{ strtoupper(substr($package['name'], 0, 2)) }}
-                                    </div>
-                                @endif
+                                @include('tipowerup.installer::livewire._partials.package-icon', [
+                                    'icon' => $icon,
+                                    'name' => $package['name'],
+                                    'type' => $isBundle ? 'bundle' : $package['type'],
+                                    'variant' => 'list',
+                                ])
                             </td>
                             <td>
                                 <div class="d-flex align-items-center gap-2 tipowerup-installer__text-sm">

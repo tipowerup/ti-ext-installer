@@ -9,10 +9,12 @@ use Igniter\Main\Classes\ThemeManager;
 use Igniter\System\Classes\ExtensionManager;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\On;
+use Livewire\Attributes\Session;
 use Livewire\Component;
 use Throwable;
 use Tipowerup\Installer\Livewire\Concerns\HandlesApiErrors;
 use Tipowerup\Installer\Services\PowerUpApiClient;
+use Tipowerup\Installer\ValueObjects\Package;
 
 class Marketplace extends Component
 {
@@ -32,11 +34,17 @@ class Marketplace extends Component
 
     public bool $isLoading = true;
 
+    #[Session(key: 'tipowerup_installer_marketplace_view_mode')]
     public string $viewMode = 'grid';
 
     public function mount(): void
     {
         $this->loadMarketplace();
+    }
+
+    public function placeholder(): string
+    {
+        return view('tipowerup.installer::livewire._partials.lazy-placeholder')->render();
     }
 
     #[On('api-key-changed')]
@@ -63,9 +71,10 @@ class Marketplace extends Component
             $response = $apiClient->getMarketplace($filters);
 
             $installedCodes = $this->getInstalledPackageCodes();
-            $this->packages = array_values(
+            $this->packages = array_values(array_map(
+                fn (array $pkg): array => Package::fromMarketplaceApi($pkg)->toArray(),
                 array_filter($response['data'] ?? [], fn (array $pkg): bool => !in_array($pkg['code'] ?? '', $installedCodes, true) && !($pkg['purchased'] ?? false))
-            );
+            ));
             $pagination = $response['pagination'] ?? [];
             $this->totalPages = $pagination['total_pages'] ?? 1;
             $this->currentPage = $pagination['current_page'] ?? 1;

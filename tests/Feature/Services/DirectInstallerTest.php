@@ -84,27 +84,34 @@ function extensionZipFiles(): array
 }
 
 /**
- * Return a minimal valid ZIP for a theme (theme.json).
+ * Return a minimal valid ZIP for a theme (theme.json + composer.json).
  */
 function themeZipFiles(): array
 {
     return [
         'theme.json' => json_encode(['code' => 'tipowerup-darktheme', 'name' => 'Dark Theme']),
+        'composer.json' => json_encode(['name' => 'tipowerup/ti-theme-darktheme']),
     ];
 }
 
 // ---------------------------------------------------------------------------
-// Clean up any test artifacts after every test
+// Sandbox the local disk and public_path() into a per-test temp dir so
+// --parallel workers don't trample each other's tipowerup/{themes,extensions}
+// writes (which would otherwise share the testbench's real storage/ + public/).
 // ---------------------------------------------------------------------------
 
-afterEach(function (): void {
-    $localDisk = Storage::disk('local');
+beforeEach(function (): void {
+    $this->testBase = sys_get_temp_dir().'/tipowerup-installer-'.getmypid().'-'.uniqid();
+    config()->set('filesystems.disks.local.root', $this->testBase.'/storage');
+    app()->usePublicPath($this->testBase.'/public');
+    Storage::forgetDisk('local');
+    File::ensureDirectoryExists($this->testBase.'/storage');
+    File::ensureDirectoryExists($this->testBase.'/public');
+});
 
-    foreach (['tipowerup/tmp', 'tipowerup/extensions/tipowerup', 'tipowerup/themes', 'tipowerup/backups'] as $dir) {
-        $fullPath = $localDisk->path($dir);
-        if (File::isDirectory($fullPath)) {
-            File::deleteDirectory($fullPath);
-        }
+afterEach(function (): void {
+    if (isset($this->testBase) && File::isDirectory($this->testBase)) {
+        File::deleteDirectory($this->testBase);
     }
 
     \Mockery::close();
@@ -152,8 +159,13 @@ describe('install', function (): void {
             'packages.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath)),
         ]);
 
-        $installer = directInstallerWithMockedTI(null, function ($mock): void {
-            $mock->shouldReceive('loadTheme')->zeroOrMoreTimes()->andReturn(null);
+        $themeStub = new \Igniter\Main\Classes\Theme(
+            sys_get_temp_dir(),
+            ['code' => 'tipowerup-darktheme', 'name' => 'Dark Theme'],
+        );
+
+        $installer = directInstallerWithMockedTI(null, function ($mock) use ($themeStub): void {
+            $mock->shouldReceive('loadTheme')->zeroOrMoreTimes()->andReturn($themeStub);
             $mock->shouldReceive('installTheme')->zeroOrMoreTimes()->andReturn(true);
         });
 

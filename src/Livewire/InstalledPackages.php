@@ -10,12 +10,15 @@ use Igniter\Main\Models\Theme;
 use Igniter\System\Classes\ExtensionManager;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\On;
+use Livewire\Attributes\Session;
 use Livewire\Component;
 use Throwable;
 use Tipowerup\Installer\Livewire\Concerns\HandlesApiErrors;
 use Tipowerup\Installer\Models\License;
 use Tipowerup\Installer\Services\PackageInstaller;
 use Tipowerup\Installer\Services\PowerUpApiClient;
+use Tipowerup\Installer\ValueObjects\Icon;
+use Tipowerup\Installer\ValueObjects\Package;
 
 class InstalledPackages extends Component
 {
@@ -31,6 +34,7 @@ class InstalledPackages extends Component
      */
     public array $availablePackages = [];
 
+    #[Session(key: 'tipowerup_installer_installed_view_mode')]
     public string $viewMode = 'grid';
 
     public bool $isLoading = true;
@@ -59,6 +63,11 @@ class InstalledPackages extends Component
         $this->loadPackages();
     }
 
+    public function placeholder(): string
+    {
+        return view('tipowerup.installer::livewire._partials.lazy-placeholder')->render();
+    }
+
     public function loadPackages(): void
     {
         $this->isLoading = true;
@@ -67,9 +76,7 @@ class InstalledPackages extends Component
         try {
             // 1. Scan TI registries for on-system tipowerup extensions & themes
             $onSystem = $this->scanInstalledPowerUps();
-
-            // Build set of on-system codes
-            $onSystemCodes = array_column($onSystem, 'code');
+            $onSystemCodes = array_map(fn (Package $p): string => $p->code, $onSystem);
 
             // 2. Get License records indexed by code
             $licenses = License::query()->get()->keyBy('package_code');
@@ -82,48 +89,29 @@ class InstalledPackages extends Component
             $ownedCodes = array_keys($remoteIndex);
 
             // 4. Build Installed PowerUps from on-system scan
-            $this->installedPackages = array_map(function (array $pkg) use ($licenses, $remoteIndex, $ownedCodes): array {
-                $license = $licenses->get($pkg['code']);
-                $remote = $remoteIndex[$pkg['code']] ?? null;
-                $rawVersion = $license?->version ?? $pkg['version'] ?? null;
+            $this->installedPackages = array_map(function (Package $pkg) use ($licenses, $remoteIndex, $ownedCodes): array {
+                $license = $licenses->get($pkg->code);
+                $remote = $remoteIndex[$pkg->code] ?? null;
+                $rawVersion = $license?->version ?? $pkg->version;
                 $version = $rawVersion ? $this->normalizeVersion($rawVersion) : 'unknown';
 
-                return [
-                    'code' => $pkg['code'],
-                    'extension_code' => $pkg['extension_code'] ?? null,
-                    'theme_code' => $pkg['theme_code'] ?? null,
-                    'name' => $remote['name'] ?? $license?->package_name ?? $pkg['name'],
-                    'description' => $remote['description'] ?? $pkg['description'] ?? '',
-                    'version' => $version,
-                    'latest_version' => isset($remote['version']) ? $this->normalizeVersion($remote['version']) : $version,
-                    'type' => $pkg['type'],
-                    'install_method' => $license?->install_method ?? 'unknown',
-                    'is_active' => $pkg['is_active'],
-                    'expires_at' => $license?->expires_at?->format('M j, Y'),
-                    'has_update' => $this->isNewerVersion($remote['version'] ?? '', $rawVersion ?? ''),
-                    'icon' => $remote['icon'] ?? $pkg['icon'] ?? $this->getDefaultIcon($pkg['type']),
-                    'is_owned' => in_array($pkg['code'], $ownedCodes, true),
-                    'settings_url' => $pkg['settings_url'] ?? null,
-                    'edit_url' => $pkg['edit_url'] ?? null,
-                    'customize_url' => $pkg['customize_url'] ?? null,
-                ];
+                return $pkg->with(
+                    name: $remote['name'] ?? $license?->package_name ?? $pkg->name,
+                    description: $remote['description'] ?? $pkg->description,
+                    icon: isset($remote['icon']) ? Icon::fromAny($remote['icon']) : $pkg->icon,
+                    version: $version,
+                    latestVersion: isset($remote['version']) ? $this->normalizeVersion($remote['version']) : $version,
+                    installMethod: $license?->install_method ?? 'unknown',
+                    expiresAt: $license?->expires_at?->format('M j, Y'),
+                    hasUpdate: $this->isNewerVersion($remote['version'] ?? '', $rawVersion ?? ''),
+                    isOwned: in_array($pkg->code, $ownedCodes, true),
+                )->toArray();
             }, $onSystem);
 
             // 5. Available PowerUps: API purchases NOT on system
             $this->availablePackages = collect($remotePackages)
                 ->filter(fn (array $pkg): bool => !in_array($pkg['code'] ?? '', $onSystemCodes, true))
-                ->map(fn (array $pkg): array => [
-                    'code' => $pkg['code'],
-                    'name' => $pkg['name'] ?? $pkg['code'],
-                    'description' => $pkg['description'] ?? '',
-                    'version' => $pkg['version'] ?? null,
-                    'type' => $pkg['type'] ?? 'extension',
-                    'icon' => $pkg['icon'] ?? $this->getDefaultIcon($pkg['type'] ?? 'extension'),
-                    'url' => $pkg['url'] ?? null,
-                    'price' => $pkg['price'] ?? 0,
-                    'price_formatted' => $pkg['price_formatted'] ?? null,
-                    'purchased' => true,
-                ])
+                ->map(fn (array $pkg): array => Package::fromMarketplaceApi($pkg)->with(purchased: true)->toArray())
                 ->values()
                 ->toArray();
 
@@ -139,7 +127,7 @@ class InstalledPackages extends Component
     /**
      * Scan TI's extension and theme registries for tipowerup packages.
      *
-     * @return array<int, array{code: string, name: string, description: string, type: string, version: string, icon: mixed, is_active: bool}>
+     * @return array<int, Package>
      */
     private function scanInstalledPowerUps(): array
     {
@@ -177,17 +165,17 @@ class InstalledPackages extends Component
                 $settingsUrl = admin_url('extensions/edit/'.str_replace('.', '/', $code).'/'.$firstKey);
             }
 
-            $packages[] = [
-                'code' => $composerName,
-                'extension_code' => $code,
-                'name' => $meta['name'] ?? $code,
-                'description' => $meta['description'] ?? '',
-                'type' => 'extension',
-                'version' => $this->normalizeVersion($composerVersions[$composerName] ?? $meta['version'] ?? null),
-                'icon' => $this->normalizeIcon($meta['icon'] ?? null, $extensionRoot, 'extension'),
-                'is_active' => !$extensionManager->isDisabled($code),
-                'settings_url' => $settingsUrl,
-            ];
+            $packages[] = new Package(
+                code: $composerName,
+                name: $meta['name'] ?? $code,
+                type: 'extension',
+                icon: Icon::fromAny($meta['icon'] ?? null, $extensionRoot),
+                description: $meta['description'] ?? '',
+                extensionCode: $code,
+                version: $this->normalizeVersion($composerVersions[$composerName] ?? $meta['version'] ?? null),
+                isActive: !$extensionManager->isDisabled($code),
+                settingsUrl: $settingsUrl,
+            );
         }
 
         // Scan themes (codes like "tipowerup-orange-tw")
@@ -206,9 +194,6 @@ class InstalledPackages extends Component
             $themeComposer = json_decode($contents, true);
             $composerName = $themeComposer['name'];
 
-            $themeVersion = $composerVersions[$composerName] ?? null;
-            $themeIcon = $this->normalizeIcon($theme->icon ?? null, $themePath, 'theme');
-
             $editUrl = admin_url('themes/source/'.$code);
             $customizeUrl = null;
 
@@ -220,18 +205,18 @@ class InstalledPackages extends Component
                 // Theme may not have form config
             }
 
-            $packages[] = [
-                'code' => $composerName,
-                'theme_code' => $code,
-                'name' => $theme->label ?? $theme->name ?? $code,
-                'description' => $theme->description ?? '',
-                'type' => 'theme',
-                'version' => $this->normalizeVersion($themeVersion),
-                'icon' => $themeIcon,
-                'is_active' => $themeManager->isActive($code),
-                'edit_url' => $editUrl,
-                'customize_url' => $customizeUrl,
-            ];
+            $packages[] = new Package(
+                code: $composerName,
+                name: $theme->label ?? $theme->name ?? $code,
+                type: 'theme',
+                icon: Icon::fromAny($theme->icon ?? null, $themePath),
+                description: $theme->description ?? '',
+                themeCode: $code,
+                version: $this->normalizeVersion($composerVersions[$composerName] ?? null),
+                isActive: $themeManager->isActive($code),
+                editUrl: $editUrl,
+                customizeUrl: $customizeUrl,
+            );
         }
 
         return $packages;
@@ -324,16 +309,13 @@ class InstalledPackages extends Component
         $packageName = $this->resolveAvailablePackageName($packageCode);
 
         $this->dispatch('install-started');
-        $this->dispatch('begin-install', packageCode: $packageCode, packageName: $packageName);
+        $this->dispatch('begin-install', packageCode: $packageCode, packageName: $packageName)->to(InstallerMain::class);
     }
 
     public function updatePackage(string $packageCode): void
     {
-        // Dispatch event to parent (InstallerMain)
         $this->dispatch('install-started');
-
-        // Dispatch event to InstallProgress component
-        $this->dispatch('begin-update', packageCode: $packageCode);
+        $this->dispatch('begin-update', packageCode: $packageCode)->to(InstallerMain::class);
     }
 
     public function confirmUninstall(string $code): void
@@ -578,35 +560,6 @@ class InstalledPackages extends Component
     }
 
     /**
-     * Normalize icon data from extension meta (camelCase keys, relative image paths)
-     * into the format expected by blade partials (snake_case keys, data URIs).
-     */
-    private function normalizeIcon(mixed $icon, string $basePath, string $type): mixed
-    {
-        if (!is_array($icon)) {
-            return $icon ?? $this->getDefaultIcon($type);
-        }
-
-        // Normalize camelCase -> snake_case for blade partials
-        if (isset($icon['backgroundColor'])) {
-            $icon['background_color'] = $icon['backgroundColor'];
-            unset($icon['backgroundColor']);
-        }
-
-        // Resolve relative image path to data URI
-        if (isset($icon['image']) && !isset($icon['url'])) {
-            $imagePath = $basePath.'/'.$icon['image'];
-            if (file_exists($imagePath)) {
-                $mime = mime_content_type($imagePath) ?: 'image/svg+xml';
-                $icon['url'] = 'data:'.$mime.';base64,'.base64_encode(file_get_contents($imagePath));
-            }
-            unset($icon['image']);
-        }
-
-        return $icon;
-    }
-
-    /**
      * Check if the remote version is newer than the local version.
      * Only compares valid semver versions — non-semver (dev-main, dev-master, etc.) always returns false.
      */
@@ -673,18 +626,6 @@ class InstalledPackages extends Component
         $package = collect($this->installedPackages)->firstWhere('code', $code);
 
         return $package['theme_code'] ?? $code;
-    }
-
-    /**
-     * Show a TI admin toast notification via SweetAlert.
-     */
-    private function getDefaultIcon(string $packageType): string
-    {
-        return match ($packageType) {
-            'extension' => 'fa-puzzle-piece',
-            'theme' => 'fa-paint-brush',
-            default => 'fa-cube',
-        };
     }
 
     public function render(): View

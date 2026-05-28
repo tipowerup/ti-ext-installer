@@ -112,10 +112,9 @@ class InstallationPipeline
                 $this->compatibilityChecker->assertSatisfied($packageCode, $packageRequirements);
             } else {
                 $compatResults = $this->compatibilityChecker->check($packageCode, $packageRequirements);
-                $isSatisfied = $this->compatibilityChecker->isSatisfied($packageCode, $packageRequirements);
+                $failures = $this->compatibilityChecker->getFailures($compatResults);
 
-                if (!$isSatisfied) {
-                    $failures = $this->compatibilityChecker->getFailures($compatResults);
+                if ($failures !== []) {
                     $this->logFailure($packageCode, $action, $method, 'Compatibility check failed', $startTime);
 
                     throw PackageInstallationException::downloadFailed(

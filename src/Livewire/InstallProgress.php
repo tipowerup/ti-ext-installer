@@ -138,7 +138,7 @@ class InstallProgress extends Component
 
     public function closeProgress(): void
     {
-        $this->dispatch('install-completed');
+        $this->dispatch('install-completed')->to(InstallerMain::class);
     }
 
     private function updateStages(string $currentStage, ?string $failedStage = null): void

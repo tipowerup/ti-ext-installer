@@ -15,7 +15,7 @@
             </div>
         </div>
         <div class="d-flex justify-content-end gap-2 mt-3">
-            <button wire:click="closeDetail" type="button" class="btn btn-secondary">
+            <button @click="$dispatch('close-package-detail')" wire:click="closeDetail" type="button" class="btn btn-secondary">
                 {{ lang('tipowerup.installer::default.progress_close') }}
             </button>
             <button wire:click="loadPackageDetails" type="button" class="btn btn-primary">
@@ -24,12 +24,6 @@
             </button>
         </div>
     @else
-        @php
-            $icon = $packageData['icon'] ?? null;
-            $defaultColors = ['extension' => '#3B82F6', 'theme' => '#F97316', 'bundle' => '#8B5CF6'];
-            $defaultColor = $defaultColors[$packageData['type'] ?? 'extension'] ?? '#3B82F6';
-        @endphp
-
         <div class="d-flex align-items-start mb-4">
             @if(is_array($icon) && !empty($icon['url']))
                 <img src="{{ $icon['url'] }}" alt="{{ $packageData['name'] }}"
@@ -49,9 +43,16 @@
             <div class="flex-grow-1">
                 <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
                     <h4 class="mb-0">{{ $packageData['name'] }}</h4>
-                    @if(!($packageData['local'] ?? false))
+                    @if($installed)
+                        <span class="badge bg-success-subtle text-success border border-success-subtle d-inline-flex align-items-center gap-1">
+                            <i class="fa fa-check"></i>
+                            {{ lang('tipowerup.installer::default.installed_active') }}
+                        </span>
+                    @elseif(!($packageData['local'] ?? false))
                         @if($packageData['purchased'] ?? false)
-                            <button wire:click="installPackage" type="button" class="btn btn-success btn-sm"
+                            <button wire:click="installPackage"
+                                    @click="$dispatch('begin-install-instant', { packageName: @js($packageData['name']) })"
+                                    type="button" class="btn btn-success btn-sm"
                                     wire:loading.attr="disabled">
                                 <span wire:loading.remove wire:target="installPackage">
                                     <i class="fa fa-download me-1"></i>
@@ -143,23 +144,12 @@
                     @endif
                 </div>
             @elseif($activeDetailTab === 'screenshots')
-                @php
-                    $allImages = collect();
-                    if (!empty($packageData['cover_image'])) {
-                        $allImages->push($packageData['cover_image']);
-                    }
-                    foreach ($packageData['screenshots'] ?? [] as $s) {
-                        if ($s !== ($packageData['cover_image'] ?? null)) {
-                            $allImages->push($s);
-                        }
-                    }
-                @endphp
                 <div class="tab-pane fade show active"
-                     x-data="lightbox(@js($allImages->values()->all()))"
+                     x-data="lightbox(@js($allImages))"
                      @keydown.escape.window="open && close()"
                      @keydown.left.window="open && prev()"
                      @keydown.right.window="open && next()">
-                    @if($allImages->isNotEmpty())
+                    @if($allImages !== [])
                         <div class="tipowerup-installer__screenshot-grid">
                             @foreach($allImages as $index => $screenshot)
                                 <img src="{{ $screenshot }}" alt="Screenshot {{ $index + 1 }}"
@@ -212,9 +202,9 @@
                                         <small class="text-muted">{{ $entry['date'] }}</small>
                                     @endif
                                 </div>
-                                @if(!empty($entry['notes']))
+                                @if(!empty($entry['notes_html']))
                                     <div class="prose">
-                                        {!! strip_tags(\Illuminate\Support\Str::markdown($entry['notes']), '<p><h1><h2><h3><h4><h5><h6><ul><ol><li><a><strong><em><b><i><code><pre><blockquote><br><hr>') !!}
+                                        {!! $entry['notes_html'] !!}
                                     </div>
                                 @endif
                             </div>

@@ -550,8 +550,11 @@ class DirectInstaller
             return $hasExtensionFile && File::exists($path.'/composer.json');
         }
 
-        // Themes must have theme.json
-        return File::exists($path.'/theme.json');
+        // Themes need a manifest (theme.php for TI v4, theme.json for legacy) plus composer.json
+        $hasManifest = File::exists($path.'/theme.php')
+            || File::exists($path.'/theme.json');
+
+        return $hasManifest && File::exists($path.'/composer.json');
     }
 
     /**
@@ -639,25 +642,39 @@ class DirectInstaller
 
     /**
      * Publish theme assets to public directory.
+     *
+     * Supports two layout conventions:
+     *  - TI legacy: theme/assets/   → public/vendor/{vendor}-{name}/
+     *  - Laravel package (Vite):  theme/public/   → public/vendor/{vendor}-{name}/
+     * Both are copied when present; later sources overwrite earlier ones on name conflict.
      */
     private function publishThemeAssets(string $packageCode, string $themePath): void
     {
         try {
             $shortName = $this->getShortName($packageCode);
             $vendorName = $this->getVendorName($packageCode);
-            $assetsSource = $themePath.'/assets';
-            $assetsTarget = public_path('vendor/'.$vendorName.'-'.$shortName);
+            $target = public_path('vendor/'.$vendorName.'-'.$shortName);
 
-            if (!File::exists($assetsSource)) {
+            $sources = array_filter([
+                $themePath.'/assets',
+                $themePath.'/public',
+            ], fn (string $path): bool => File::isDirectory($path));
+
+            if ($sources === []) {
                 return;
             }
 
-            if (!File::exists(dirname($assetsTarget))) {
-                File::makeDirectory(dirname($assetsTarget), 0755, true);
+            if (!File::exists(dirname($target))) {
+                File::makeDirectory(dirname($target), 0755, true);
             }
 
-            File::copyDirectory($assetsSource, $assetsTarget);
+            if (File::isDirectory($target)) {
+                File::deleteDirectory($target);
+            }
 
+            foreach ($sources as $source) {
+                File::copyDirectory($source, $target);
+            }
         } catch (Throwable $e) {
             Log::warning('DirectInstaller: Failed to publish theme assets', [
                 'package_code' => $packageCode,
