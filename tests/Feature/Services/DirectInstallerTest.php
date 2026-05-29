@@ -1005,3 +1005,110 @@ describe('extractPackage security', function (): void {
         File::deleteDirectory($targetPath);
     });
 });
+
+// ===========================================================================
+// describe: registerWithTI failure paths
+//
+// These exercise the trait's defensive branches via DirectInstaller::install():
+//   - extension code unresolvable (false / empty)
+//   - theme load returns null
+//   - non-PackageInstallationException from the manager → outer wrapper
+// ===========================================================================
+
+describe('registerWithTI failures', function (): void {
+
+    it('throws when ExtensionManager::getIdentifier returns false', function (): void {
+        $zipPath = sys_get_temp_dir().'/test-ext-'.uniqid().'.zip';
+        createTestZip($zipPath, extensionZipFiles());
+
+        Http::fake(['packages.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath))]);
+
+        $installer = directInstallerWithMockedTI(function ($mock): void {
+            $fakeExtension = Mockery::mock(BaseExtension::class);
+            $mock->shouldReceive('loadExtension')->andReturn($fakeExtension);
+            $mock->shouldReceive('getIdentifier')->andReturn(false);
+            $mock->shouldReceive('installExtension')->zeroOrMoreTimes();
+        });
+
+        expect(fn () => $installer->install('tipowerup/ti-ext-darkmode', [
+            'download_url' => 'https://packages.tipowerup.com/x/1.0.0',
+            'package_type' => 'extension',
+            'version' => '1.0.0',
+        ]))->toThrow(
+            PackageInstallationException::class,
+            'Failed to determine extension code',
+        );
+
+        @unlink($zipPath);
+    });
+
+    it('throws when ExtensionManager::getIdentifier returns an empty string', function (): void {
+        $zipPath = sys_get_temp_dir().'/test-ext-'.uniqid().'.zip';
+        createTestZip($zipPath, extensionZipFiles());
+
+        Http::fake(['packages.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath))]);
+
+        $installer = directInstallerWithMockedTI(function ($mock): void {
+            $fakeExtension = Mockery::mock(BaseExtension::class);
+            $mock->shouldReceive('loadExtension')->andReturn($fakeExtension);
+            $mock->shouldReceive('getIdentifier')->andReturn('');
+            $mock->shouldReceive('installExtension')->zeroOrMoreTimes();
+        });
+
+        expect(fn () => $installer->install('tipowerup/ti-ext-darkmode', [
+            'download_url' => 'https://packages.tipowerup.com/x/1.0.0',
+            'package_type' => 'extension',
+            'version' => '1.0.0',
+        ]))->toThrow(
+            PackageInstallationException::class,
+            'Failed to determine extension code',
+        );
+
+        @unlink($zipPath);
+    });
+
+    it('throws when ThemeManager::loadTheme returns null', function (): void {
+        $zipPath = sys_get_temp_dir().'/test-theme-'.uniqid().'.zip';
+        createTestZip($zipPath, themeZipFiles());
+
+        Http::fake(['packages.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath))]);
+
+        $installer = directInstallerWithMockedTI(null, function ($mock): void {
+            $mock->shouldReceive('loadTheme')->andReturn(null);
+            $mock->shouldReceive('installTheme')->zeroOrMoreTimes();
+        });
+
+        expect(fn () => $installer->install('tipowerup/ti-theme-x', [
+            'download_url' => 'https://packages.tipowerup.com/x/1.0.0',
+            'package_type' => 'theme',
+            'version' => '1.0.0',
+        ]))->toThrow(
+            PackageInstallationException::class,
+            'Failed to load theme after install',
+        );
+
+        @unlink($zipPath);
+    });
+
+    it('wraps a non-PackageInstallationException from the manager with context', function (): void {
+        $zipPath = sys_get_temp_dir().'/test-ext-'.uniqid().'.zip';
+        createTestZip($zipPath, extensionZipFiles());
+
+        Http::fake(['packages.tipowerup.com/*' => Http::response(zipBinaryContent($zipPath))]);
+
+        $installer = directInstallerWithMockedTI(function ($mock): void {
+            $mock->shouldReceive('loadExtension')->andThrow(new RuntimeException('TI is on fire'));
+        });
+
+        expect(fn () => $installer->install('tipowerup/ti-ext-darkmode', [
+            'download_url' => 'https://packages.tipowerup.com/x/1.0.0',
+            'package_type' => 'extension',
+            'version' => '1.0.0',
+        ]))->toThrow(
+            PackageInstallationException::class,
+            'Failed to register with TastyIgniter: TI is on fire',
+        );
+
+        @unlink($zipPath);
+    });
+});

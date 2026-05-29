@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Igniter\System\Classes\BaseExtension;
 use Igniter\System\Classes\ExtensionManager;
 use Tipowerup\Installer\Exceptions\CompatibilityException;
 use Tipowerup\Installer\Services\CompatibilityChecker;
@@ -228,4 +229,89 @@ it('checks multiple extension dependencies in one call', function (): void {
         expect($result['type'])->toBe('extension');
         expect($result['satisfied'])->toBeFalse();
     }
+});
+
+// ─── extension version comparison ────────────────────────────────────────────
+
+/**
+ * Anonymous BaseExtension subclass with a real getVersion method so the
+ * CompatibilityChecker's `method_exists` probe sees it (Mockery's dynamic
+ * shouldReceive methods are not visible to `method_exists`).
+ */
+function makeExtensionWithVersion(string $version): BaseExtension
+{
+    return new class($version, app()) extends BaseExtension
+    {
+        public function __construct(private readonly string $stubVersion, $app)
+        {
+            parent::__construct($app);
+        }
+
+        public function getVersion(): string
+        {
+            return $this->stubVersion;
+        }
+    };
+}
+
+it('reports extension satisfied when installed version meets a >= constraint', function (): void {
+    $extension = makeExtensionWithVersion('2.5.0');
+
+    $this->mock(ExtensionManager::class, function ($mock) use ($extension): void {
+        $mock->shouldReceive('hasExtension')->with('igniter.cart')->andReturn(true);
+        $mock->shouldReceive('findExtension')->with('igniter.cart')->andReturn($extension);
+    });
+
+    $results = $this->checker->check('test.package', [
+        'extensions' => ['igniter.cart' => '>=1.0'],
+    ]);
+
+    expect($results[0]['satisfied'])->toBeTrue()
+        ->and($results[0]['current'])->toBe('2.5.0');
+});
+
+it('reports extension not satisfied when installed version is below the >= constraint', function (): void {
+    $extension = makeExtensionWithVersion('0.5.0');
+
+    $this->mock(ExtensionManager::class, function ($mock) use ($extension): void {
+        $mock->shouldReceive('hasExtension')->with('igniter.cart')->andReturn(true);
+        $mock->shouldReceive('findExtension')->with('igniter.cart')->andReturn($extension);
+    });
+
+    $results = $this->checker->check('test.package', [
+        'extensions' => ['igniter.cart' => '>=1.0'],
+    ]);
+
+    expect($results[0]['satisfied'])->toBeFalse()
+        ->and($results[0]['current'])->toBe('0.5.0');
+});
+
+it('falls back to 0.0.0 when getVersion returns an empty string', function (): void {
+    $extension = makeExtensionWithVersion('');
+
+    $this->mock(ExtensionManager::class, function ($mock) use ($extension): void {
+        $mock->shouldReceive('hasExtension')->with('igniter.cart')->andReturn(true);
+        $mock->shouldReceive('findExtension')->with('igniter.cart')->andReturn($extension);
+    });
+
+    $results = $this->checker->check('test.package', [
+        'extensions' => ['igniter.cart' => '>=1.0'],
+    ]);
+
+    expect($results[0]['current'])->toBe('0.0.0')
+        ->and($results[0]['satisfied'])->toBeFalse();
+});
+
+it('returns 0.0.0 when finding the extension throws', function (): void {
+    $this->mock(ExtensionManager::class, function ($mock): void {
+        $mock->shouldReceive('hasExtension')->with('igniter.cart')->andReturn(true);
+        $mock->shouldReceive('findExtension')->with('igniter.cart')->andThrow(new RuntimeException('TI exploded'));
+    });
+
+    $results = $this->checker->check('test.package', [
+        'extensions' => ['igniter.cart' => '>=1.0'],
+    ]);
+
+    expect($results[0]['current'])->toBe('0.0.0')
+        ->and($results[0]['satisfied'])->toBeFalse();
 });
