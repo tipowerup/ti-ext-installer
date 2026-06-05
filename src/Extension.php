@@ -231,20 +231,25 @@ class Extension extends BaseExtension
         }
 
         if (File::isDirectory($themesPath)) {
-            $themeManager = resolve(ThemeManager::class);
-            $themeManager->addDirectory($themesPath);
+            $this->app->booted(function () use ($themesPath): void {
+                $themeManager = resolve(ThemeManager::class);
 
-            foreach (File::directories($themesPath) as $themePath) {
-                try {
-                    $this->bootStoragePackage($themePath);
-                    $themeManager->loadTheme($themePath);
-                } catch (Throwable $e) {
-                    Log::warning('Failed to load storage theme', [
-                        'path' => $themePath,
-                        'error' => $e->getMessage(),
-                    ]);
+                foreach (File::directories($themesPath) as $themePath) {
+                    try {
+                        $this->bootStoragePackage($themePath);
+                        $theme = $themeManager->loadTheme($themePath);
+
+                        if ($theme !== null) {
+                            $themeManager->bootTheme($theme);
+                        }
+                    } catch (Throwable $e) {
+                        Log::warning('Failed to load storage theme', [
+                            'path' => $themePath,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
                 }
-            }
+            });
         }
     }
 
