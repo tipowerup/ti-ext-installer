@@ -234,6 +234,11 @@ class Extension extends BaseExtension
             $this->app->booted(function () use ($themesPath): void {
                 $themeManager = resolve(ThemeManager::class);
 
+                // Load composer-discovered themes first. TI's bootThemes() skips
+                // loadThemes() once $themes is non-empty, so loading our storage
+                // themes alone would make composer themes vanish from the list.
+                $themeManager->loadThemes();
+
                 foreach (File::directories($themesPath) as $themePath) {
                     try {
                         $this->bootStoragePackage($themePath);
