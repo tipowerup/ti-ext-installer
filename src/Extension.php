@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tipowerup\Installer;
 
+use Composer\Autoload\ClassLoader;
 use Facades\Igniter\System\Helpers\SystemHelper;
 use Igniter\Admin\Facades\Template;
 use Igniter\Flame\Support\Facades\Igniter;
@@ -277,7 +278,17 @@ class Extension extends BaseExtension
 
         if (File::isFile($autoloadFile)) {
             try {
-                require_once $autoloadFile;
+                $loader = require_once $autoloadFile;
+
+                // Storage packages bundle their own vendor/ (e.g. livewire/livewire) and
+                // Composer registers it with prepend=true, putting it ahead of the main
+                // app's ClassLoader. Move it to the back so the main app wins for any
+                // shared package — otherwise its stale classmap entries cause fatal errors
+                // after the package is uninstalled.
+                if ($loader instanceof ClassLoader) {
+                    $loader->unregister();
+                    $loader->register(false);
+                }
             } catch (Throwable $e) {
                 Log::warning('Failed to load bundled vendor autoload', [
                     'path' => $autoloadFile,

@@ -140,7 +140,7 @@
                             <button @click="open = false" wire:click="closePackageDetail" type="button" class="btn-close"></button>
                         </div>
                         <div class="modal-body tipowerup-installer__modal-body--detail">
-                            <livewire:tipowerup-installer::package-detail :package-code="$selectedPackage" :initial-data="$selectedPackageData" />
+                            <livewire:tipowerup-installer::package-detail :package-code="$selectedPackage" :initial-data="$selectedPackageData" lazy />
                         </div>
                     </div>
                 </div>

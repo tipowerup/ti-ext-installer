@@ -1,4 +1,6 @@
-<div class="tipowerup-installer__installed-packages">
+<div class="tipowerup-installer__installed-packages"
+     x-data="{}"
+     x-on:install-completed.window="$wire.call('onInstallCompleted')">
     @if($errorMessage)
         <div class="alert alert-danger d-flex align-items-start mb-3" role="alert">
             <i class="fa fa-exclamation-triangle me-2 mt-1 flex-shrink-0"></i>

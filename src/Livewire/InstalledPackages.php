@@ -407,6 +407,7 @@ class InstalledPackages extends Component
         try {
             $name = $this->resolvePackageName($code);
             $themeCode = $this->resolveThemeCode($code);
+            Theme::where('code', $themeCode)->update(['status' => true]);
             Theme::activateTheme($themeCode);
             Theme::clearDefaultModel();
             $this->setPackageActive($code, true);

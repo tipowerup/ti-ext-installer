@@ -230,6 +230,16 @@ class PackageDetail extends Component
         $this->dispatch('package-detail-closed')->to(InstallerMain::class);
     }
 
+    public function placeholder(): string
+    {
+        return '<div class="text-center py-5">
+            <div class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="text-muted">'.lang('tipowerup.installer::default.detail_loading').'</p>
+        </div>';
+    }
+
     public function render(): View
     {
         $type = $this->packageData['type'] ?? 'extension';

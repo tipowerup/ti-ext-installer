@@ -1439,6 +1439,10 @@
     text-decoration: underline;
 }
 
+.tipowerup-installer .prose img {
+    display: none;
+}
+
 /* --- Lists --- */
 
 .tipowerup-installer .prose ul,

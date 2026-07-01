@@ -264,6 +264,12 @@ class DirectInstaller
                 }
             }
 
+            // Pre-load all classes unique to this package's bundled vendor so they
+            // remain in PHP's class table after the files are deleted. Registered
+            // service providers (Livewire hooks, etc.) may reference them during
+            // the remainder of this request.
+            $this->preloadUniquePackageClasses($targetPath);
+
             // Delete package directory
             File::deleteDirectory($targetPath);
 
@@ -289,6 +295,36 @@ class DirectInstaller
             ]);
 
             throw $e;
+        }
+    }
+
+    /**
+     * Force-load all classes from the package's bundled vendor that are not
+     * already present in the main app's classmap. Called before file deletion
+     * so any service-provider hooks registered at boot (e.g. Livewire features)
+     * can still resolve their classes during the remainder of this request.
+     */
+    private function preloadUniquePackageClasses(string $packagePath): void
+    {
+        $packageClassmapFile = $packagePath.'/vendor/composer/autoload_classmap.php';
+        if (!file_exists($packageClassmapFile)) {
+            return;
+        }
+
+        /** @var array<string, string> $packageClassmap */
+        $packageClassmap = require $packageClassmapFile;
+
+        $mainClassmapFile = base_path('vendor/composer/autoload_classmap.php');
+        $mainClassmap = file_exists($mainClassmapFile) ? (array) (require $mainClassmapFile) : [];
+
+        foreach (array_diff_key($packageClassmap, $mainClassmap) as $class => $_file) {
+            if (!class_exists($class, false) && !interface_exists($class, false) && !trait_exists($class, false)) {
+                try {
+                    class_exists($class, true);
+                } catch (Throwable) {
+                    // ignore classes that fail to load
+                }
+            }
         }
     }
 

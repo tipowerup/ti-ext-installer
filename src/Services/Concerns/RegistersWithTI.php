@@ -71,6 +71,8 @@ trait RegistersWithTI
                 }
 
                 $themeManager->installTheme($theme->name);
+
+                ThemeModel::where('code', $theme->name)->update(['status' => true]);
             }
         } catch (PackageInstallationException $e) {
             throw $e;
