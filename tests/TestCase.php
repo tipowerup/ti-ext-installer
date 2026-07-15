@@ -28,5 +28,9 @@ abstract class TestCase extends BaseTestCase
         parent::defineEnvironment($app);
 
         $app['config']->set('app.key', 'base64:'.base64_encode(str_repeat('x', 32)));
+
+        // Give each parallel worker its own compiled-view directory so workers
+        // never race to write the same .php file simultaneously.
+        $app['config']->set('view.compiled', sys_get_temp_dir().'/tipowerup-views-'.getmypid());
     }
 }
