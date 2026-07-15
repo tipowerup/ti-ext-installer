@@ -72,7 +72,14 @@ trait RegistersWithTI
 
                 $themeManager->installTheme($theme->name);
 
-                ThemeModel::where('code', $theme->name)->update(['status' => true]);
+                try {
+                    ThemeModel::where('code', $theme->name)->update(['status' => true]);
+                } catch (Throwable $statusError) {
+                    Log::debug('Theme status update skipped', [
+                        'theme' => $theme->name,
+                        'error' => $statusError->getMessage(),
+                    ]);
+                }
             }
         } catch (PackageInstallationException $e) {
             throw $e;
