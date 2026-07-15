@@ -516,6 +516,8 @@ it('disableExtension sets errorMessage on failure', function (): void {
 it('activateTheme sets package is_active to true on success', function (): void {
     // Use an alias mock so the static Theme::activateTheme() call is intercepted.
     $aliasMock = Mockery::mock('alias:'.Theme::class);
+    $aliasMock->shouldReceive('where')->with('code', 'tipowerup-orange-tw')
+        ->andReturn(Mockery::mock(['update' => 1]));
     $aliasMock->shouldReceive('activateTheme')->with('tipowerup-orange-tw')->once();
     $aliasMock->shouldReceive('clearDefaultModel')->once();
 
