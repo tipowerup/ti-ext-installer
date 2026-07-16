@@ -32,6 +32,37 @@ it('requires the bundled vendor autoload when present', function (): void {
     expect(File::exists($marker))->toBeTrue();
 });
 
+it('moves a bundled ClassLoader behind the main app loader', function (): void {
+    // Composer registers the bundled loader with prepend=true; the method must
+    // re-register it with prepend=false so the host app's loader wins for any
+    // package the storage bundle also ships (e.g. livewire/livewire).
+    $marker = $this->tmpPackagePath.'/loader.flag';
+    $autoloadCode = <<<PHP
+        <?php
+
+        return new class('$marker') extends \Composer\Autoload\ClassLoader
+        {
+            public function __construct(private string \$marker) {}
+
+            public function register(\$prepend = false): void
+            {
+                file_put_contents(\$this->marker, 'registered:'.var_export(\$prepend, true), FILE_APPEND);
+            }
+
+            public function unregister(): void
+            {
+                file_put_contents(\$this->marker, 'unregistered|', FILE_APPEND);
+            }
+        };
+        PHP;
+    File::put($this->tmpPackagePath.'/vendor/autoload.php', $autoloadCode);
+    File::put($marker, '');
+
+    $this->invoke->invoke($this->extension, $this->tmpPackagePath);
+
+    expect(File::get($marker))->toBe('unregistered|registered:false');
+});
+
 it('does nothing when no bundled vendor autoload exists', function (): void {
     // No vendor/autoload.php in the package dir — call must be a no-op, not throw.
     expect(fn () => $this->invoke->invoke($this->extension, $this->tmpPackagePath))
