@@ -6,6 +6,7 @@ namespace Tipowerup\Installer\Services;
 
 use Igniter\Main\Classes\ThemeManager;
 use Igniter\System\Classes\ExtensionManager;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -360,13 +361,13 @@ class DirectInstaller
                 ->withHeaders($headers)
                 ->timeout(self::DOWNLOAD_TIMEOUT_SECONDS)
                 ->connectTimeout(30)
-                ->retry(2, 1000, function (Throwable $e, $response): bool {
+                ->retry(2, 1000, function (Throwable $e): bool {
                     // Only retry on server errors or timeouts, not auth/client errors
-                    if ($response === null) {
+                    if (!$e instanceof RequestException) {
                         return true;
                     }
 
-                    return $response->status() >= 500;
+                    return $e->response->status() >= 500;
                 }, throw: false)
                 ->sink($tmpFile)
                 ->get($url);
