@@ -26,14 +26,14 @@ class DirectInstaller
 
     private const int DOWNLOAD_TIMEOUT_SECONDS = 300;
 
+    /**
+     * Extraction never executes file contents, so this only blocks extensions
+     * that are dangerous merely by being present on disk (e.g. phar's
+     * self-executing stream wrapper). Scripts like .sh are inert until someone
+     * runs them, which nothing in this pipeline does.
+     */
     private const array DANGEROUS_EXTENSIONS = [
         'phar',
-        'sh',
-        'bash',
-        'exe',
-        'bat',
-        'cmd',
-        'com',
     ];
 
     /**
@@ -102,36 +102,39 @@ class DirectInstaller
 
             $targetPath = $this->resolveTargetPath($packageCode, $packageType);
             $backupPath = null;
+            $targetExists = File::exists($targetPath);
 
-            if ($isUpdate && File::exists($targetPath)) {
-                $onProgress(48, 'Creating backup...');
-                $backupPath = Storage::disk('local')->path(sprintf('tipowerup/backups/%s-', $packageCode).date('Y-m-d-His'));
-                File::copyDirectory($targetPath, $backupPath);
-                $onProgress(55, 'Backup created');
-
-                File::deleteDirectory($targetPath);
-            }
+            // Extract into a staging directory first so a bad package never
+            // touches the live directory — only swap in after it validates.
+            $extractionPath = $isUpdate && $targetExists
+                ? Storage::disk('local')->path('tipowerup/tmp/stage-'.uniqid())
+                : $targetPath;
 
             $onProgress($isUpdate ? 58 : 55, 'Extracting package...');
-            $this->extractPackage($zipPath, $targetPath, $packageCode);
+            $this->extractPackage($zipPath, $extractionPath, $packageCode);
             $onProgress(75, 'Extraction complete');
 
             File::delete($zipPath);
 
             $onProgress(78, 'Validating package structure...');
 
-            if (!$this->validatePackageStructure($targetPath, $packageType)) {
-                if ($backupPath !== null && File::exists($backupPath)) {
-                    File::deleteDirectory($targetPath);
-                    File::moveDirectory($backupPath, $targetPath);
-                } else {
-                    File::deleteDirectory($targetPath);
-                }
+            if (!$this->validatePackageStructure($extractionPath, $packageType)) {
+                File::deleteDirectory($extractionPath);
 
                 throw PackageInstallationException::extractionFailed(
                     $packageCode,
                     'Invalid package structure - missing required files'
                 );
+            }
+
+            if ($extractionPath !== $targetPath) {
+                $onProgress(80, 'Creating backup...');
+                $backupPath = Storage::disk('local')->path(sprintf('tipowerup/backups/%s-', $packageCode).date('Y-m-d-His'));
+                File::copyDirectory($targetPath, $backupPath);
+
+                File::deleteDirectory($targetPath);
+                File::moveDirectory($extractionPath, $targetPath);
+                $onProgress(81, 'Backup created');
             }
 
             if (!$isUpdate) {
@@ -142,7 +145,20 @@ class DirectInstaller
 
             if ($packageType === 'theme') {
                 $onProgress($isUpdate ? 82 : 92, 'Publishing theme assets...');
-                $this->publishThemeAssets($packageCode, $targetPath);
+
+                try {
+                    $this->publishThemeAssets($packageCode, $targetPath);
+                } catch (Throwable $e) {
+                    if ($backupPath !== null && File::exists($backupPath)) {
+                        File::deleteDirectory($targetPath);
+                        File::moveDirectory($backupPath, $targetPath);
+                    }
+
+                    throw PackageInstallationException::extractionFailed(
+                        $packageCode,
+                        'Failed to publish theme assets: '.$e->getMessage()
+                    );
+                }
             }
 
             if ($packageType === 'extension') {

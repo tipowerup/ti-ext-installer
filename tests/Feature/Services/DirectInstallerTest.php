@@ -955,7 +955,7 @@ describe('extractPackage security', function (): void {
         $zipPath = sys_get_temp_dir().'/test-dangerous-'.uniqid().'.zip';
         $zip = new ZipArchive;
         $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
-        $zip->addFromString('install.sh', '#!/bin/bash\nrm -rf /');
+        $zip->addFromString('exploit.phar', '<?php phar_stub();');
         $zip->close();
 
         $targetPath = Storage::disk('local')->path('tipowerup/tmp/dangerous-test-'.uniqid());
@@ -964,6 +964,25 @@ describe('extractPackage security', function (): void {
 
         expect(fn () => $installer->exposedExtractPackage($zipPath, $targetPath, 'test'))
             ->toThrow(PackageInstallationException::class, 'Dangerous file extension');
+
+        @unlink($zipPath);
+        File::deleteDirectory($targetPath);
+    });
+
+    it('extracts a ZIP entry that is a vendored shell script (never executed)', function (): void {
+        $zipPath = sys_get_temp_dir().'/test-shellscript-'.uniqid().'.zip';
+        $zip = new ZipArchive;
+        $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+        $zip->addFromString('vendor/authorizenet/authorizenet/scripts/post-patches.sh', '#!/bin/sh\necho patch');
+        $zip->addFromString('theme.php', '<?php');
+        $zip->close();
+
+        $targetPath = Storage::disk('local')->path('tipowerup/tmp/shellscript-test-'.uniqid());
+
+        $installer = makeInstallerWithExtractor();
+        $installer->exposedExtractPackage($zipPath, $targetPath, 'test');
+
+        expect(File::exists($targetPath.'/vendor/authorizenet/authorizenet/scripts/post-patches.sh'))->toBeTrue();
 
         @unlink($zipPath);
         File::deleteDirectory($targetPath);

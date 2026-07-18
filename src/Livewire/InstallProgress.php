@@ -160,8 +160,9 @@ class InstallProgress extends Component
         if ($currentIndex === false && in_array($currentStage, ['failed', 'cancelled'], true)) {
             $failedIndex = null;
             if ($failedStage !== null) {
+                $normalizedFailedStage = $failedStage === 'updating' ? 'installing' : $failedStage;
                 $stageKeys = array_column($this->stages, 'key');
-                $failedIndex = array_search($failedStage, $stageKeys, true);
+                $failedIndex = array_search($normalizedFailedStage, $stageKeys, true);
             }
 
             foreach ($this->stages as $index => &$stage) {

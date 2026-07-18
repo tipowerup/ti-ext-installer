@@ -277,11 +277,14 @@ class BackupManager
     private function determineTargetPath(string $packageCode): string
     {
         [$vendor, $name] = $this->splitPackageCode($packageCode);
+        $isTheme = str_starts_with($name, 'ti-theme-');
         $shortName = preg_replace('/^ti-(ext|theme)-/', '', $name);
 
         // Default to storage directory for tipowerup packages (direct install location)
         if ($vendor === 'tipowerup') {
-            return storage_path(sprintf('app/tipowerup/extensions/%s/%s', $vendor, $shortName));
+            return $isTheme
+                ? storage_path(sprintf('app/tipowerup/themes/%s-%s', $vendor, $shortName))
+                : storage_path(sprintf('app/tipowerup/extensions/%s/%s', $vendor, $shortName));
         }
 
         return base_path(sprintf('vendor/%s/%s', $vendor, $name));

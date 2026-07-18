@@ -244,39 +244,44 @@ describe('validateFilePath', function (): void {
             ->toThrow(PackageInstallationException::class);
     });
 
-    it('rejects a .sh shell script', function (): void {
+    it('rejects a .phar file even in subdirectories', function (): void {
+        expect(fn () => directInstaller()->callValidateFilePath('scripts/exploit.phar'))
+            ->toThrow(PackageInstallationException::class);
+    });
+
+    it('allows a .sh shell script (never executed by extraction)', function (): void {
         expect(fn () => directInstaller()->callValidateFilePath('script.sh'))
-            ->toThrow(PackageInstallationException::class);
+            ->not->toThrow(PackageInstallationException::class);
     });
 
-    it('rejects a .bash script', function (): void {
+    it('allows a .bash script', function (): void {
         expect(fn () => directInstaller()->callValidateFilePath('run.bash'))
-            ->toThrow(PackageInstallationException::class);
+            ->not->toThrow(PackageInstallationException::class);
     });
 
-    it('rejects a .exe binary', function (): void {
+    it('allows a .exe binary', function (): void {
         expect(fn () => directInstaller()->callValidateFilePath('run.exe'))
-            ->toThrow(PackageInstallationException::class);
+            ->not->toThrow(PackageInstallationException::class);
     });
 
-    it('rejects a .bat batch file', function (): void {
+    it('allows a .bat batch file', function (): void {
         expect(fn () => directInstaller()->callValidateFilePath('cmd.bat'))
-            ->toThrow(PackageInstallationException::class);
+            ->not->toThrow(PackageInstallationException::class);
     });
 
-    it('rejects a .cmd file', function (): void {
+    it('allows a .cmd file', function (): void {
         expect(fn () => directInstaller()->callValidateFilePath('run.cmd'))
-            ->toThrow(PackageInstallationException::class);
+            ->not->toThrow(PackageInstallationException::class);
     });
 
-    it('rejects a .com executable', function (): void {
+    it('allows a .com executable', function (): void {
         expect(fn () => directInstaller()->callValidateFilePath('exploit.com'))
-            ->toThrow(PackageInstallationException::class);
+            ->not->toThrow(PackageInstallationException::class);
     });
 
-    it('rejects dangerous extensions even in subdirectories', function (): void {
-        expect(fn () => directInstaller()->callValidateFilePath('scripts/install.sh'))
-            ->toThrow(PackageInstallationException::class);
+    it('allows a vendored .sh script nested in subdirectories', function (): void {
+        expect(fn () => directInstaller()->callValidateFilePath('vendor/authorizenet/authorizenet/scripts/post-patches.sh'))
+            ->not->toThrow(PackageInstallationException::class);
     });
 });
 
